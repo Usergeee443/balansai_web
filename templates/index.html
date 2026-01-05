@@ -10,8 +10,53 @@
 <body>
     <!-- Main Container -->
     <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
+        <!-- Sidebar Navigation - Desktop -->
+        <aside class="sidebar-nav">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">💰</div>
+                    <div class="sidebar-logo-text">Balans AI</div>
+                </div>
+            </div>
+            <div class="sidebar-menu">
+                <button class="sidebar-menu-item active" data-page="pageHome">
+                    <span class="sidebar-menu-icon">🏠</span>
+                    <span>Asosiy</span>
+                </button>
+                <button class="sidebar-menu-item" data-page="pageTransactions">
+                    <span class="sidebar-menu-icon">📊</span>
+                    <span>Tranzaksiyalar</span>
+                </button>
+                <button class="sidebar-menu-item" data-page="pageStatistics">
+                    <span class="sidebar-menu-icon">📈</span>
+                    <span>Statistika</span>
+                </button>
+                <button class="sidebar-menu-item" data-page="pageServices">
+                    <span class="sidebar-menu-icon">🎯</span>
+                    <span>Xizmatlar</span>
+                </button>
+                <button class="sidebar-menu-item" data-page="pageProfile">
+                    <span class="sidebar-menu-icon">👤</span>
+                    <span>Profil</span>
+                </button>
+            </div>
+            <div class="sidebar-footer">
+                <div class="sidebar-user" id="sidebarUser">
+                    <div class="sidebar-user-avatar">
+                        <span id="sidebarUserInitial">B</span>
+                    </div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="sidebarUserName">Loading...</div>
+                        <div class="sidebar-user-phone" id="sidebarUserPhone">+998</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Header - Mobile -->
+            <header class="app-header">
             <div class="header-content">
                 <div class="header-left">
                     <div class="user-avatar">
@@ -204,8 +249,8 @@
             </div>
         </main>
 
-        <!-- Bottom Navigation -->
-        <nav class="bottom-nav">
+            <!-- Bottom Navigation - Mobile -->
+            <nav class="bottom-nav">
             <button class="nav-item active" data-page="pageHome">
                 <span class="nav-icon">🏠</span>
                 <span class="nav-label">Asosiy</span>
@@ -227,7 +272,8 @@
                 <span class="nav-label">Profil</span>
             </button>
         </nav>
-    </div>
+        </div><!-- end main-content -->
+    </div><!-- end app-container -->
 
     <!-- Add Transaction Modal -->
     <div class="modal" id="addTransactionModal">

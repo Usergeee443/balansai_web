@@ -78,8 +78,18 @@ function showNotification(message, type = 'info') {
 
 // Navigation
 function setupNavigation() {
+    // Bottom navigation (mobile)
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const pageId = item.dataset.page;
+            navigateToPage(pageId);
+        });
+    });
+
+    // Sidebar navigation (desktop)
+    const sidebarItems = document.querySelectorAll('.sidebar-menu-item');
+    sidebarItems.forEach(item => {
         item.addEventListener('click', () => {
             const pageId = item.dataset.page;
             navigateToPage(pageId);
@@ -102,8 +112,16 @@ function navigateToPage(pageId) {
     // Show selected page
     document.getElementById(pageId)?.classList.add('active');
 
-    // Update nav items
+    // Update bottom nav items (mobile)
     document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.page === pageId) {
+            item.classList.add('active');
+        }
+    });
+
+    // Update sidebar menu items (desktop)
+    document.querySelectorAll('.sidebar-menu-item').forEach(item => {
         item.classList.remove('active');
         if (item.dataset.page === pageId) {
             item.classList.add('active');
@@ -168,10 +186,17 @@ function updateUserInfo() {
     if (!state.user) return;
 
     const userName = state.user.name || 'User';
+    const userPhone = state.user.phone || '+998';
     const initial = userName.charAt(0).toUpperCase();
 
+    // Update mobile header
     document.getElementById('userName').textContent = userName;
     document.getElementById('userInitial').textContent = initial;
+
+    // Update desktop sidebar
+    document.getElementById('sidebarUserName').textContent = userName;
+    document.getElementById('sidebarUserInitial').textContent = initial;
+    document.getElementById('sidebarUserPhone').textContent = userPhone;
 }
 
 function updateBalance(balance) {
