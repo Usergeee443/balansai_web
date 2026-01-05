@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balans AI - Moliyaviy boshqaruv</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Main Container -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="user-avatar">
+                        <span id="userInitial">B</span>
+                    </div>
+                    <div class="header-info">
+                        <h1 class="app-title">Balans AI</h1>
+                        <p class="user-name" id="userName">Loading...</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn" id="notificationBtn">
+                        <span class="notification-badge">3</span>
+                        🔔
+                    </button>
+                    <button class="icon-btn" id="settingsBtn">
+                        ⚙️
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Home Page -->
+            <div class="page active" id="pageHome">
+                <!-- Balance Card -->
+                <div class="balance-card">
+                    <div class="balance-header">
+                        <h2>Umumiy balans</h2>
+                    </div>
+                    <div class="balance-display">
+                        <svg viewBox="0 0 200 100" class="balance-gauge">
+                            <defs>
+                                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M 20 80 A 80 80 0 0 1 180 80" stroke="#e0e0e0" stroke-width="12" fill="none" />
+                            <path id="gaugeProgress" d="M 20 80 A 80 80 0 0 1 180 80" stroke="url(#gaugeGradient)" stroke-width="12" fill="none" stroke-linecap="round" />
+                        </svg>
+                        <div class="balance-amount">
+                            <span class="amount" id="totalBalance">0</span>
+                            <span class="currency">UZS</span>
+                        </div>
+                    </div>
+                    <button class="btn-add-transaction" id="addTransactionBtn">
+                        <span class="btn-icon">+</span>
+                        Tranzaksiya qo'shish
+                    </button>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="quick-stats">
+                    <div class="stat-card income">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-info">
+                            <p class="stat-label">Daromad</p>
+                            <p class="stat-value" id="incomeAmount">0 UZS</p>
+                        </div>
+                    </div>
+                    <div class="stat-card expense">
+                        <div class="stat-icon">📉</div>
+                        <div class="stat-info">
+                            <p class="stat-label">Xarajat</p>
+                            <p class="stat-value" id="expenseAmount">0 UZS</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3>So'nggi tranzaksiyalar</h3>
+                        <a href="#" class="link" id="viewAllTransactions">Barchasi</a>
+                    </div>
+                    <div class="transaction-list" id="recentTransactions">
+                        <!-- Transactions will be loaded here -->
+                        <div class="loading">Yuklanmoqda...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Page -->
+            <div class="page" id="pageTransactions">
+                <div class="page-header">
+                    <h2>Tranzaksiyalar</h2>
+                    <div class="page-actions">
+                        <button class="btn-filter" id="filterBtn">
+                            🔍 Filter
+                        </button>
+                    </div>
+                </div>
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">Barchasi</button>
+                    <button class="filter-tab" data-filter="income">Daromad</button>
+                    <button class="filter-tab" data-filter="expense">Xarajat</button>
+                </div>
+                <div class="transaction-list" id="allTransactions">
+                    <!-- Transactions will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Statistics Page -->
+            <div class="page" id="pageStatistics">
+                <div class="page-header">
+                    <h2>Statistika</h2>
+                </div>
+                <div class="stats-period">
+                    <button class="period-btn active" data-period="week">Hafta</button>
+                    <button class="period-btn" data-period="month">Oy</button>
+                    <button class="period-btn" data-period="year">Yil</button>
+                </div>
+                <div class="stats-container">
+                    <div class="chart-card">
+                        <h3>Daromad va xarajat</h3>
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
+                    <div class="stats-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Jami daromad:</span>
+                            <span class="summary-value income" id="statIncome">0 UZS</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Jami xarajat:</span>
+                            <span class="summary-value expense" id="statExpense">0 UZS</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Farq:</span>
+                            <span class="summary-value" id="statDifference">0 UZS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Services Page -->
+            <div class="page" id="pageServices">
+                <div class="page-header">
+                    <h2>Xizmatlar</h2>
+                </div>
+                <div class="services-grid">
+                    <div class="service-card" data-service="debts">
+                        <div class="service-icon">💰</div>
+                        <h3>Qarzlar</h3>
+                        <p>Qarzlarni boshqarish</p>
+                    </div>
+                    <div class="service-card" data-service="reminders">
+                        <div class="service-icon">⏰</div>
+                        <h3>Eslatmalar</h3>
+                        <p>To'lov eslatmalari</p>
+                    </div>
+                    <div class="service-card" data-service="contacts">
+                        <div class="service-icon">👥</div>
+                        <h3>Kontaktlar</h3>
+                        <p>Shaxslar va kategoriyalar</p>
+                    </div>
+                    <div class="service-card" data-service="limit">
+                        <div class="service-icon">🎯</div>
+                        <h3>Limit</h3>
+                        <p>Oylik xarajat limiti</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Page -->
+            <div class="page" id="pageProfile">
+                <div class="page-header">
+                    <h2>Profil</h2>
+                </div>
+                <div class="profile-card">
+                    <div class="profile-avatar">
+                        <span id="profileInitial">B</span>
+                    </div>
+                    <h3 id="profileName">Loading...</h3>
+                    <p id="profilePhone">+998 XX XXX XX XX</p>
+                </div>
+                <div class="profile-menu">
+                    <button class="menu-item" id="editProfileBtn">
+                        <span class="menu-icon">✏️</span>
+                        <span class="menu-text">Profilni tahrirlash</span>
+                        <span class="menu-arrow">›</span>
+                    </button>
+                    <button class="menu-item" id="logoutBtn">
+                        <span class="menu-icon">🚪</span>
+                        <span class="menu-text">Chiqish</span>
+                        <span class="menu-arrow">›</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-page="pageHome">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Asosiy</span>
+            </button>
+            <button class="nav-item" data-page="pageTransactions">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Tranzaksiyalar</span>
+            </button>
+            <button class="nav-item" data-page="pageStatistics">
+                <span class="nav-icon">📈</span>
+                <span class="nav-label">Statistika</span>
+            </button>
+            <button class="nav-item" data-page="pageServices">
+                <span class="nav-icon">🎯</span>
+                <span class="nav-label">Xizmatlar</span>
+            </button>
+            <button class="nav-item" data-page="pageProfile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profil</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Add Transaction Modal -->
+    <div class="modal" id="addTransactionModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Tranzaksiya qo'shish</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="transactionForm">
+                    <div class="form-group">
+                        <label>Turi</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="type" value="income" checked>
+                                <span class="radio-text">Daromad</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="type" value="expense">
+                                <span class="radio-text">Xarajat</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Summa</label>
+                        <input type="number" id="amount" name="amount" placeholder="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="currency">Valyuta</label>
+                        <select id="currency" name="currency">
+                            <option value="UZS">UZS</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="RUB">RUB</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Kategoriya</label>
+                        <input type="text" id="category" name="category" placeholder="Masalan: Oziq-ovqat">
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Izoh</label>
+                        <textarea id="description" name="description" rows="3" placeholder="Qo'shimcha ma'lumot"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Saqlash</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

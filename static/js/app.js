@@ -1,0 +1,482 @@
+// App State
+const state = {
+    currentPage: 'pageHome',
+    user: null,
+    transactions: [],
+    statistics: null,
+    currentFilter: 'all',
+    currentPeriod: 'month',
+    charts: {}
+};
+
+// API Helper
+const api = {
+    async fetch(endpoint, options = {}) {
+        try {
+            const response = await fetch(endpoint, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            });
+
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+
+            const data = await response.json();
+            return { ok: response.ok, data, status: response.status };
+        } catch (error) {
+            console.error('API Error:', error);
+            showNotification('Tarmoq xatosi yuz berdi', 'error');
+            return { ok: false, error };
+        }
+    },
+
+    async get(endpoint) {
+        return this.fetch(endpoint);
+    },
+
+    async post(endpoint, body) {
+        return this.fetch(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(body)
+        });
+    }
+};
+
+// Utility Functions
+function formatNumber(num) {
+    return new Intl.NumberFormat('uz-UZ').format(num);
+}
+
+function formatCurrency(amount, currency = 'UZS') {
+    return `${formatNumber(amount)} ${currency}`;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+        return 'Bugun';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+        return 'Kecha';
+    } else {
+        return date.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' });
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Simple notification (can be enhanced with a library)
+    alert(message);
+}
+
+// Navigation
+function setupNavigation() {
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const pageId = item.dataset.page;
+            navigateToPage(pageId);
+        });
+    });
+
+    // View all transactions link
+    document.getElementById('viewAllTransactions')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigateToPage('pageTransactions');
+    });
+}
+
+function navigateToPage(pageId) {
+    // Hide all pages
+    document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+    });
+
+    // Show selected page
+    document.getElementById(pageId)?.classList.add('active');
+
+    // Update nav items
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.page === pageId) {
+            item.classList.add('active');
+        }
+    });
+
+    // Load page data
+    state.currentPage = pageId;
+    loadPageData(pageId);
+}
+
+function loadPageData(pageId) {
+    switch (pageId) {
+        case 'pageHome':
+            loadDashboard();
+            break;
+        case 'pageTransactions':
+            loadTransactions();
+            break;
+        case 'pageStatistics':
+            loadStatistics();
+            break;
+        case 'pageProfile':
+            loadProfile();
+            break;
+    }
+}
+
+// Dashboard
+async function loadDashboard() {
+    try {
+        // Load user info
+        const userResponse = await api.get('/api/auth/me');
+        if (userResponse.ok) {
+            state.user = userResponse.data;
+            updateUserInfo();
+        }
+
+        // Load balance
+        const balanceResponse = await api.get('/api/balance');
+        if (balanceResponse.ok) {
+            updateBalance(balanceResponse.data.balance);
+        }
+
+        // Load statistics
+        const statsResponse = await api.get('/api/statistics?period=month');
+        if (statsResponse.ok) {
+            updateQuickStats(statsResponse.data);
+        }
+
+        // Load recent transactions
+        const transactionsResponse = await api.get('/api/transactions?limit=5');
+        if (transactionsResponse.ok) {
+            renderRecentTransactions(transactionsResponse.data);
+        }
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+    }
+}
+
+function updateUserInfo() {
+    if (!state.user) return;
+
+    const userName = state.user.name || 'User';
+    const initial = userName.charAt(0).toUpperCase();
+
+    document.getElementById('userName').textContent = userName;
+    document.getElementById('userInitial').textContent = initial;
+}
+
+function updateBalance(balance) {
+    const balanceElement = document.getElementById('totalBalance');
+    if (balanceElement) {
+        balanceElement.textContent = formatNumber(balance);
+    }
+
+    // Update gauge (simple version)
+    const maxBalance = Math.max(balance, 10000000); // 10M UZS as reference
+    const percentage = (balance / maxBalance) * 100;
+    // Gauge animation can be added here
+}
+
+function updateQuickStats(stats) {
+    document.getElementById('incomeAmount').textContent = formatCurrency(stats.total_income);
+    document.getElementById('expenseAmount').textContent = formatCurrency(stats.total_expense);
+}
+
+function renderRecentTransactions(transactions) {
+    const container = document.getElementById('recentTransactions');
+    if (!container) return;
+
+    if (transactions.length === 0) {
+        container.innerHTML = '<div class="loading">Tranzaksiyalar yo\'q</div>';
+        return;
+    }
+
+    container.innerHTML = transactions.map(transaction => `
+        <div class="transaction-item">
+            <div class="transaction-icon ${transaction.transaction_type}">
+                ${transaction.transaction_type === 'income' ? '📈' : '📉'}
+            </div>
+            <div class="transaction-info">
+                <div class="transaction-category">${transaction.category || 'Kategoriyasiz'}</div>
+                <div class="transaction-description">${transaction.description || formatDate(transaction.created_at)}</div>
+            </div>
+            <div class="transaction-amount">
+                <div class="amount-value ${transaction.transaction_type}">
+                    ${transaction.transaction_type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount, transaction.currency)}
+                </div>
+                <div class="transaction-date">${formatDate(transaction.created_at)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Transactions
+async function loadTransactions() {
+    try {
+        const type = state.currentFilter === 'all' ? '' : `&type=${state.currentFilter}`;
+        const response = await api.get(`/api/transactions?limit=50${type}`);
+
+        if (response.ok) {
+            state.transactions = response.data;
+            renderTransactions(response.data);
+        }
+    } catch (error) {
+        console.error('Error loading transactions:', error);
+    }
+}
+
+function renderTransactions(transactions) {
+    const container = document.getElementById('allTransactions');
+    if (!container) return;
+
+    if (transactions.length === 0) {
+        container.innerHTML = '<div class="loading">Tranzaksiyalar yo\'q</div>';
+        return;
+    }
+
+    container.innerHTML = transactions.map(transaction => `
+        <div class="transaction-item">
+            <div class="transaction-icon ${transaction.transaction_type}">
+                ${transaction.transaction_type === 'income' ? '📈' : '📉'}
+            </div>
+            <div class="transaction-info">
+                <div class="transaction-category">${transaction.category || 'Kategoriyasiz'}</div>
+                <div class="transaction-description">${transaction.description || ''}</div>
+            </div>
+            <div class="transaction-amount">
+                <div class="amount-value ${transaction.transaction_type}">
+                    ${transaction.transaction_type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount, transaction.currency)}
+                </div>
+                <div class="transaction-date">${formatDate(transaction.created_at)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function setupTransactionFilters() {
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    filterTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            filterTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            state.currentFilter = tab.dataset.filter;
+            loadTransactions();
+        });
+    });
+}
+
+// Statistics
+async function loadStatistics() {
+    try {
+        const response = await api.get(`/api/statistics?period=${state.currentPeriod}`);
+
+        if (response.ok) {
+            state.statistics = response.data;
+            updateStatsSummary(response.data);
+            renderChart(response.data);
+        }
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+    }
+}
+
+function updateStatsSummary(stats) {
+    document.getElementById('statIncome').textContent = formatCurrency(stats.total_income);
+    document.getElementById('statExpense').textContent = formatCurrency(stats.total_expense);
+
+    const difference = stats.total_income - stats.total_expense;
+    const diffElement = document.getElementById('statDifference');
+    diffElement.textContent = formatCurrency(Math.abs(difference));
+    diffElement.className = 'summary-value ' + (difference >= 0 ? 'income' : 'expense');
+}
+
+function renderChart(stats) {
+    const ctx = document.getElementById('incomeExpenseChart');
+    if (!ctx) return;
+
+    // Destroy existing chart
+    if (state.charts.incomeExpense) {
+        state.charts.incomeExpense.destroy();
+    }
+
+    // Create new chart
+    state.charts.incomeExpense = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Daromad', 'Xarajat'],
+            datasets: [{
+                label: 'Summa',
+                data: [stats.total_income, stats.total_expense],
+                backgroundColor: [
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(239, 68, 68, 0.8)'
+                ],
+                borderColor: [
+                    'rgb(16, 185, 129)',
+                    'rgb(239, 68, 68)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function setupStatsPeriod() {
+    const periodBtns = document.querySelectorAll('.period-btn');
+    periodBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            periodBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            state.currentPeriod = btn.dataset.period;
+            loadStatistics();
+        });
+    });
+}
+
+// Profile
+async function loadProfile() {
+    if (!state.user) {
+        const response = await api.get('/api/auth/me');
+        if (response.ok) {
+            state.user = response.data;
+        }
+    }
+
+    if (state.user) {
+        const name = state.user.name || 'User';
+        const phone = state.user.phone || '+998 XX XXX XX XX';
+        const initial = name.charAt(0).toUpperCase();
+
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('profilePhone').textContent = phone;
+        document.getElementById('profileInitial').textContent = initial;
+    }
+}
+
+// Modals
+function setupModals() {
+    // Add Transaction Modal
+    const addTransactionBtn = document.getElementById('addTransactionBtn');
+    const addTransactionModal = document.getElementById('addTransactionModal');
+    const modalClose = addTransactionModal?.querySelector('.modal-close');
+    const modalOverlay = addTransactionModal?.querySelector('.modal-overlay');
+
+    addTransactionBtn?.addEventListener('click', () => {
+        addTransactionModal?.classList.add('active');
+    });
+
+    modalClose?.addEventListener('click', () => {
+        addTransactionModal?.classList.remove('active');
+    });
+
+    modalOverlay?.addEventListener('click', () => {
+        addTransactionModal?.classList.remove('active');
+    });
+
+    // Transaction Form Submit
+    const transactionForm = document.getElementById('transactionForm');
+    transactionForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(transactionForm);
+        const data = {
+            type: formData.get('type'),
+            amount: parseFloat(formData.get('amount')),
+            currency: formData.get('currency'),
+            category: formData.get('category'),
+            description: formData.get('description')
+        };
+
+        const response = await api.post('/api/transactions', data);
+
+        if (response.ok) {
+            showNotification('Tranzaksiya qo\'shildi', 'success');
+            addTransactionModal?.classList.remove('active');
+            transactionForm.reset();
+            loadDashboard();
+        } else {
+            showNotification(response.data.error || 'Xatolik yuz berdi', 'error');
+        }
+    });
+}
+
+// Services
+function setupServices() {
+    const serviceCards = document.querySelectorAll('.service-card');
+    serviceCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const service = card.dataset.service;
+            showNotification(`${service} xizmati hozircha ishlab chiqilmoqda`, 'info');
+        });
+    });
+}
+
+// Settings and Logout
+function setupSettings() {
+    const settingsBtn = document.getElementById('settingsBtn');
+    const notificationBtn = document.getElementById('notificationBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    settingsBtn?.addEventListener('click', () => {
+        navigateToPage('pageProfile');
+    });
+
+    notificationBtn?.addEventListener('click', () => {
+        showNotification('Bildirishnomalar yo\'q', 'info');
+    });
+
+    logoutBtn?.addEventListener('click', async () => {
+        if (confirm('Tizimdan chiqmoqchimisiz?')) {
+            const response = await api.post('/api/auth/logout');
+            if (response.ok || response.status === 401) {
+                window.location.href = '/login';
+            }
+        }
+    });
+}
+
+// Initialize App
+function initApp() {
+    console.log('Initializing Balans AI Web App...');
+
+    // Setup all event listeners
+    setupNavigation();
+    setupTransactionFilters();
+    setupStatsPeriod();
+    setupModals();
+    setupServices();
+    setupSettings();
+
+    // Load initial data
+    loadDashboard();
+}
+
+// Start app when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
