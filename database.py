@@ -79,6 +79,58 @@ def init_database():
             )
         """)
 
+        # Create warehouse_products table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS warehouse_products (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                quantity DECIMAL(10,2) DEFAULT 0,
+                unit VARCHAR(50) DEFAULT 'dona',
+                price DECIMAL(15,2) DEFAULT 0,
+                category VARCHAR(100),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_user (user_id)
+            )
+        """)
+
+        # Create employees table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS employees (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                position VARCHAR(100),
+                phone VARCHAR(20),
+                salary DECIMAL(15,2) DEFAULT 0,
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_user (user_id),
+                INDEX idx_status (status)
+            )
+        """)
+
+        # Create tasks table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                due_date DATE,
+                priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
+                status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+                assigned_to INT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_user (user_id),
+                INDEX idx_status (status),
+                INDEX idx_assigned (assigned_to)
+            )
+        """)
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -605,6 +657,385 @@ def get_monthly_limit(user_id):
     except Exception as e:
         logger.error(f"Error getting monthly limit: {e}")
         return None
+
+# ==================== WAREHOUSE FUNCTIONS ====================
+
+def add_warehouse_product(user_id, name, quantity, unit='dona', price=0, category=None):
+    """Add new warehouse product"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO warehouse_products (user_id, name, quantity, unit, price, category)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (user_id, name, quantity, unit, price, category))
+
+        product_id = cursor.lastrowid
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return product_id
+    except Exception as e:
+        logger.error(f"Error adding warehouse product: {e}")
+        return None
+
+def get_warehouse_products(user_id):
+    """Get warehouse products"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT * FROM warehouse_products
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+        """, (user_id,))
+
+        products = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return products
+    except Exception as e:
+        logger.error(f"Error getting warehouse products: {e}")
+        return []
+
+def update_warehouse_product(user_id, product_id, **kwargs):
+    """Update warehouse product"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        fields = []
+        values = []
+        for key, value in kwargs.items():
+            fields.append(f"{key} = %s")
+            values.append(value)
+
+        values.extend([user_id, product_id])
+
+        query = f"UPDATE warehouse_products SET {', '.join(fields)} WHERE user_id = %s AND id = %s"
+        cursor.execute(query, values)
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return True
+    except Exception as e:
+        logger.error(f"Error updating warehouse product: {e}")
+        return False
+
+# ==================== EMPLOYEE FUNCTIONS ====================
+
+def add_employee(user_id, name, position=None, phone=None, salary=0):
+    """Add new employee"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO employees (user_id, name, position, phone, salary, status)
+            VALUES (%s, %s, %s, %s, %s, 'active')
+        """, (user_id, name, position, phone, salary))
+
+        employee_id = cursor.lastrowid
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return employee_id
+    except Exception as e:
+        logger.error(f"Error adding employee: {e}")
+        return None
+
+def get_employees(user_id):
+    """Get employees"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT * FROM employees
+            WHERE user_id = %s AND status = 'active'
+            ORDER BY created_at DESC
+        """, (user_id,))
+
+        employees = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return employees
+    except Exception as e:
+        logger.error(f"Error getting employees: {e}")
+        return []
+
+def update_employee(user_id, employee_id, **kwargs):
+    """Update employee"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        fields = []
+        values = []
+        for key, value in kwargs.items():
+            fields.append(f"{key} = %s")
+            values.append(value)
+
+        values.extend([user_id, employee_id])
+
+        query = f"UPDATE employees SET {', '.join(fields)} WHERE user_id = %s AND id = %s"
+        cursor.execute(query, values)
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return True
+    except Exception as e:
+        logger.error(f"Error updating employee: {e}")
+        return False
+
+# ==================== TASK FUNCTIONS ====================
+
+def add_task(user_id, title, description=None, due_date=None, priority='medium', assigned_to=None):
+    """Add new task"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO tasks (user_id, title, description, due_date, priority, assigned_to, status)
+            VALUES (%s, %s, %s, %s, %s, %s, 'pending')
+        """, (user_id, title, description, due_date, priority, assigned_to))
+
+        task_id = cursor.lastrowid
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return task_id
+    except Exception as e:
+        logger.error(f"Error adding task: {e}")
+        return None
+
+def get_tasks(user_id, status=None):
+    """Get tasks"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        if status:
+            cursor.execute("""
+                SELECT * FROM tasks
+                WHERE user_id = %s AND status = %s
+                ORDER BY created_at DESC
+            """, (user_id, status))
+        else:
+            cursor.execute("""
+                SELECT * FROM tasks
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+            """, (user_id,))
+
+        tasks = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return tasks
+    except Exception as e:
+        logger.error(f"Error getting tasks: {e}")
+        return []
+
+def update_task(user_id, task_id, **kwargs):
+    """Update task"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        fields = []
+        values = []
+        for key, value in kwargs.items():
+            fields.append(f"{key} = %s")
+            values.append(value)
+
+        values.extend([user_id, task_id])
+
+        query = f"UPDATE tasks SET {', '.join(fields)} WHERE user_id = %s AND id = %s"
+        cursor.execute(query, values)
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return True
+    except Exception as e:
+        logger.error(f"Error updating task: {e}")
+        return False
+
+# ==================== REPORTING FUNCTIONS ====================
+
+def get_report_summary(user_id, period='month'):
+    """Get comprehensive report summary"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Determine date range
+        if period == 'week':
+            date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
+        elif period == 'month':
+            date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+        elif period == 'year':
+            date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)"
+        else:
+            date_filter = "1=1"
+
+        # Get financial summary
+        cursor.execute(f"""
+            SELECT
+                SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as total_income,
+                SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as total_expense,
+                COUNT(*) as transaction_count
+            FROM transactions
+            WHERE user_id = %s AND {date_filter}
+        """, (user_id,))
+
+        financial = cursor.fetchone()
+
+        # Get top categories
+        cursor.execute(f"""
+            SELECT category, SUM(amount) as total
+            FROM transactions
+            WHERE user_id = %s AND transaction_type = 'expense' AND {date_filter}
+            GROUP BY category
+            ORDER BY total DESC
+            LIMIT 5
+        """, (user_id,))
+
+        top_categories = cursor.fetchall()
+
+        # Get daily trend
+        cursor.execute(f"""
+            SELECT DATE(created_at) as date,
+                   SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as income,
+                   SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as expense
+            FROM transactions
+            WHERE user_id = %s AND {date_filter}
+            GROUP BY DATE(created_at)
+            ORDER BY date DESC
+            LIMIT 30
+        """, (user_id,))
+
+        daily_trend = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return {
+            'financial': financial,
+            'top_categories': top_categories,
+            'daily_trend': daily_trend,
+            'period': period
+        }
+    except Exception as e:
+        logger.error(f"Error getting report summary: {e}")
+        return {}
+
+def get_analytics(user_id, period='month'):
+    """Get detailed analytics"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        if period == 'week':
+            date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
+        elif period == 'month':
+            date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+        elif period == 'year':
+            date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)"
+        else:
+            date_filter = "1=1"
+
+        # Get transaction statistics
+        cursor.execute(f"""
+            SELECT
+                COUNT(*) as total_transactions,
+                AVG(amount) as avg_transaction,
+                MAX(amount) as max_transaction,
+                MIN(amount) as min_transaction
+            FROM transactions
+            WHERE user_id = %s AND {date_filter}
+        """, (user_id,))
+
+        stats = cursor.fetchone()
+
+        # Get category breakdown
+        cursor.execute(f"""
+            SELECT category, transaction_type,
+                   COUNT(*) as count,
+                   SUM(amount) as total
+            FROM transactions
+            WHERE user_id = %s AND {date_filter}
+            GROUP BY category, transaction_type
+        """, (user_id,))
+
+        categories = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return {
+            'statistics': stats,
+            'categories': categories
+        }
+    except Exception as e:
+        logger.error(f"Error getting analytics: {e}")
+        return {}
+
+def get_category_breakdown(user_id, period='month'):
+    """Get spending by category"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        if period == 'week':
+            date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
+        elif period == 'month':
+            date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+        elif period == 'year':
+            date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)"
+        else:
+            date_filter = "1=1"
+
+        cursor.execute(f"""
+            SELECT category,
+                   SUM(amount) as total,
+                   COUNT(*) as count,
+                   AVG(amount) as average
+            FROM transactions
+            WHERE user_id = %s AND transaction_type = 'expense' AND {date_filter}
+            GROUP BY category
+            ORDER BY total DESC
+        """, (user_id,))
+
+        categories = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return categories
+    except Exception as e:
+        logger.error(f"Error getting category breakdown: {e}")
+        return []
 
 # Initialize database on module import
 init_database()

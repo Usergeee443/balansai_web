@@ -63,6 +63,39 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def business_required(f):
+    """Decorator to require Business subscription"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        session_token = session.get('session_token')
+        if not session_token:
+            return jsonify({'error': 'Authentication required'}), 401
+
+        user_session = db.get_session(session_token)
+        if not user_session:
+            session.clear()
+            return jsonify({'error': 'Session expired'}), 401
+
+        # Get user and check subscription
+        user = db.get_user(user_session['user_id'])
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Check if user has Business subscription
+        subscription = user.get('subscription', 'free').lower()
+        if subscription != 'business':
+            return jsonify({
+                'error': 'Business tarifi kerak',
+                'redirect': 'https://balansai-app.onrender.com',
+                'message': 'Bu funksiya faqat Business tarifi uchun mavjud'
+            }), 403
+
+        # Add user_id and user to request context
+        request.user_id = user_session['user_id']
+        request.user = user
+        return f(*args, **kwargs)
+    return decorated_function
+
 # ==================== AUTHENTICATION ROUTES ====================
 
 @app.route('/login')
@@ -203,6 +236,17 @@ def index():
     session_token = session.get('session_token')
     if not session_token or not db.get_session(session_token):
         return redirect(url_for('login_page'))
+
+    # Check if user has Business subscription
+    user_session = db.get_session(session_token)
+    if user_session:
+        user = db.get_user(user_session['user_id'])
+        if user:
+            subscription = user.get('subscription', 'free').lower()
+            if subscription != 'business':
+                # Redirect non-business users to the mobile app
+                return redirect('https://balansai-app.onrender.com')
+
     return render_template('index.html')
 
 # ==================== USER ROUTES ====================
@@ -490,6 +534,212 @@ def set_monthly_limit():
         return jsonify({'error': 'Limit o\'rnatishda xatolik'}), 500
     except Exception as e:
         logger.error(f"Error in set_monthly_limit: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+# ==================== WAREHOUSE ROUTES ====================
+
+@app.route('/api/warehouse/products', methods=['GET'])
+@login_required
+def get_warehouse_products():
+    """Get warehouse products"""
+    try:
+        products = db.get_warehouse_products(request.user_id)
+        return jsonify(convert_to_serializable(products)), 200
+    except Exception as e:
+        logger.error(f"Error in get_warehouse_products: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+@app.route('/api/warehouse/products', methods=['POST'])
+@login_required
+def add_warehouse_product():
+    """Add warehouse product"""
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        quantity = data.get('quantity', 0)
+        unit = data.get('unit', 'dona')
+        price = data.get('price', 0)
+        category = data.get('category')
+
+        if not name:
+            return jsonify({'error': 'Mahsulot nomi majburiy'}), 400
+
+        product_id = db.add_warehouse_product(request.user_id, name, quantity, unit, price, category)
+
+        if product_id:
+            return jsonify({
+                'success': True,
+                'product_id': product_id,
+                'message': 'Mahsulot qo\'shildi'
+            }), 201
+        return jsonify({'error': 'Mahsulot qo\'shishda xatolik'}), 500
+    except Exception as e:
+        logger.error(f"Error in add_warehouse_product: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+@app.route('/api/warehouse/products/<int:product_id>', methods=['PUT'])
+@login_required
+def update_warehouse_product(product_id):
+    """Update warehouse product"""
+    try:
+        data = request.get_json()
+        success = db.update_warehouse_product(request.user_id, product_id, **data)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Mahsulot yangilandi'}), 200
+        return jsonify({'error': 'Yangilashda xatolik'}), 500
+    except Exception as e:
+        logger.error(f"Error in update_warehouse_product: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+# ==================== EMPLOYEE ROUTES ====================
+
+@app.route('/api/employees', methods=['GET'])
+@login_required
+def get_employees():
+    """Get employees"""
+    try:
+        employees = db.get_employees(request.user_id)
+        return jsonify(convert_to_serializable(employees)), 200
+    except Exception as e:
+        logger.error(f"Error in get_employees: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+@app.route('/api/employees', methods=['POST'])
+@login_required
+def add_employee():
+    """Add employee"""
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        position = data.get('position')
+        phone = data.get('phone')
+        salary = data.get('salary', 0)
+
+        if not name:
+            return jsonify({'error': 'Ism majburiy'}), 400
+
+        employee_id = db.add_employee(request.user_id, name, position, phone, salary)
+
+        if employee_id:
+            return jsonify({
+                'success': True,
+                'employee_id': employee_id,
+                'message': 'Xodim qo\'shildi'
+            }), 201
+        return jsonify({'error': 'Xodim qo\'shishda xatolik'}), 500
+    except Exception as e:
+        logger.error(f"Error in add_employee: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+@app.route('/api/employees/<int:employee_id>', methods=['PUT'])
+@login_required
+def update_employee(employee_id):
+    """Update employee"""
+    try:
+        data = request.get_json()
+        success = db.update_employee(request.user_id, employee_id, **data)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Xodim yangilandi'}), 200
+        return jsonify({'error': 'Yangilashda xatolik'}), 500
+    except Exception as e:
+        logger.error(f"Error in update_employee: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+# ==================== TASK ROUTES ====================
+
+@app.route('/api/tasks', methods=['GET'])
+@login_required
+def get_tasks():
+    """Get tasks"""
+    try:
+        status = request.args.get('status')
+        tasks = db.get_tasks(request.user_id, status)
+        return jsonify(convert_to_serializable(tasks)), 200
+    except Exception as e:
+        logger.error(f"Error in get_tasks: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+@app.route('/api/tasks', methods=['POST'])
+@login_required
+def add_task():
+    """Add task"""
+    try:
+        data = request.get_json()
+        title = data.get('title')
+        description = data.get('description')
+        due_date = data.get('due_date')
+        priority = data.get('priority', 'medium')
+        assigned_to = data.get('assigned_to')
+
+        if not title:
+            return jsonify({'error': 'Sarlavha majburiy'}), 400
+
+        task_id = db.add_task(request.user_id, title, description, due_date, priority, assigned_to)
+
+        if task_id:
+            return jsonify({
+                'success': True,
+                'task_id': task_id,
+                'message': 'Vazifa qo\'shildi'
+            }), 201
+        return jsonify({'error': 'Vazifa qo\'shishda xatolik'}), 500
+    except Exception as e:
+        logger.error(f"Error in add_task: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+@login_required
+def update_task(task_id):
+    """Update task"""
+    try:
+        data = request.get_json()
+        success = db.update_task(request.user_id, task_id, **data)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Vazifa yangilandi'}), 200
+        return jsonify({'error': 'Yangilashda xatolik'}), 500
+    except Exception as e:
+        logger.error(f"Error in update_task: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+# ==================== REPORTS ROUTES ====================
+
+@app.route('/api/reports/summary', methods=['GET'])
+@login_required
+def get_report_summary():
+    """Get comprehensive report summary"""
+    try:
+        period = request.args.get('period', 'month')
+        summary = db.get_report_summary(request.user_id, period)
+        return jsonify(convert_to_serializable(summary)), 200
+    except Exception as e:
+        logger.error(f"Error in get_report_summary: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+@app.route('/api/reports/analytics', methods=['GET'])
+@login_required
+def get_analytics():
+    """Get detailed analytics"""
+    try:
+        period = request.args.get('period', 'month')
+        analytics = db.get_analytics(request.user_id, period)
+        return jsonify(convert_to_serializable(analytics)), 200
+    except Exception as e:
+        logger.error(f"Error in get_analytics: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+@app.route('/api/reports/categories', methods=['GET'])
+@login_required
+def get_category_breakdown():
+    """Get spending by category"""
+    try:
+        period = request.args.get('period', 'month')
+        categories = db.get_category_breakdown(request.user_id, period)
+        return jsonify(convert_to_serializable(categories)), 200
+    except Exception as e:
+        logger.error(f"Error in get_category_breakdown: {e}")
         return jsonify({'error': 'Xatolik yuz berdi'}), 500
 
 # ==================== CONFIG ROUTE ====================
