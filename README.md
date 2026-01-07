@@ -157,16 +157,51 @@ Server `http://localhost:5000` da ishga tushadi.
 
 ## Deployment
 
-### Render.com
-1. `render.yaml` faylini tekshiring
-2. Render.com'da yangi web service yarating
-3. Environment variables'larni o'rnating
-4. Deploy qiling
+Bu loyiha Render.com ga deploy qilish uchun tayyor qilingan.
 
-### Docker
+### Render.com (Tavsiya etiladi)
+
+#### Tez Deploy Qilish
+1. GitHub repository'ni Render.com bilan bog'lang
+2. "New Blueprint" tugmasini bosing
+3. Repository'ni tanlang
+4. `render.yaml` avtomatik aniqlangan bo'ladi
+5. Environment variables'larni o'rnating (pastda ko'rish mumkin)
+6. "Apply" tugmasini bosing
+
+#### Environment Variables
+Quyidagi environment variables'larni Render Dashboard'da o'rnating:
+
+**Majburiy:**
+- `DB_HOST` - MySQL database host
+- `DB_USER` - Database foydalanuvchi nomi
+- `DB_PASSWORD` - Database paroli
+- `DB_NAME` - Database nomi (BalansAiBot)
+- `TELEGRAM_BOT_TOKEN` - Telegram bot token
+
+**Avtomatik:**
+- `SECRET_KEY` - Render tomonidan avtomatik yaratiladi
+
+#### Batafsil Deploy Qo'llanma
+Batafsil deploy qo'llanmasi uchun [DEPLOYMENT.md](./DEPLOYMENT.md) faylini o'qing.
+
+#### Deploy Fayllar
+- `render.yaml` - Render Blueprint konfiguratsiyasi
+- `Procfile` - Process management
+- `build.sh` - Build script
+- `runtime.txt` - Python versiyasi (3.11.0)
+- `requirements.txt` - Python dependencies
+
+### Docker (Alternativ)
 ```bash
 docker build -t balansai-web .
 docker run -p 5000:5000 balansai-web
+```
+
+### Manual Deploy
+```bash
+# Production da ishga tushirish
+gunicorn app:app --bind 0.0.0.0:8000 --workers 4
 ```
 
 ## Muammolarni hal qilish
