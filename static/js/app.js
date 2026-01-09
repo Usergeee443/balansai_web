@@ -264,7 +264,7 @@ function renderRecentTransactions(transactions) {
     const transactionsHTML = transactions.map(transaction => `
         <div class="transaction-item">
             <div class="transaction-icon ${transaction.transaction_type}">
-                ${transaction.transaction_type === 'income' ? '📈' : '📉'}
+                <i class="fas ${transaction.transaction_type === 'income' ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
             </div>
             <div class="transaction-info">
                 <div class="transaction-category">${transaction.category || 'Kategoriyasiz'}</div>
@@ -339,7 +339,7 @@ function renderTransactions(transactions) {
     const transactionsHTML = transactions.map(transaction => `
         <div class="transaction-item">
             <div class="transaction-icon ${transaction.transaction_type}">
-                ${transaction.transaction_type === 'income' ? '📈' : '📉'}
+                <i class="fas ${transaction.transaction_type === 'income' ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
             </div>
             <div class="transaction-info">
                 <div class="transaction-category">${transaction.category || 'Kategoriyasiz'}</div>
@@ -621,7 +621,7 @@ function renderTopTransactions(stats) {
     container.innerHTML = transactions.map(trans => `
         <div class="transaction-item">
             <div class="transaction-icon ${trans.transaction_type}">
-                ${trans.transaction_type === 'income' ? '📈' : '📉'}
+                <i class="fas ${trans.transaction_type === 'income' ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
             </div>
             <div class="transaction-info">
                 <div class="transaction-category">${trans.category || 'Kategoriyasiz'}</div>
@@ -756,11 +756,37 @@ function setupServices() {
     });
 }
 
+// Sidebar Toggle
+function setupSidebarToggle() {
+    const sidebarNav = document.getElementById('sidebarNav');
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    
+    if (!sidebarNav || !toggleBtn) return;
+
+    // Load saved state from localStorage
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState === 'true') {
+        sidebarNav.classList.add('collapsed');
+    }
+
+    toggleBtn.addEventListener('click', () => {
+        sidebarNav.classList.toggle('collapsed');
+        
+        // Save state to localStorage
+        const isCollapsed = sidebarNav.classList.contains('collapsed');
+        localStorage.setItem('sidebarCollapsed', isCollapsed.toString());
+    });
+}
+
 // Settings and Logout
 function setupSettings() {
     const settingsBtn = document.getElementById('settingsBtn');
     const notificationBtn = document.getElementById('notificationBtn');
     const logoutBtn = document.getElementById('logoutBtn');
+    const changePasswordBtn = document.getElementById('changePasswordBtn');
+    const changePasswordModal = document.getElementById('changePasswordModal');
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    const changePasswordError = document.getElementById('changePasswordError');
 
     settingsBtn?.addEventListener('click', () => {
         navigateToPage('pageProfile');
@@ -778,6 +804,124 @@ function setupSettings() {
             }
         }
     });
+
+    // Change Password Modal
+    changePasswordBtn?.addEventListener('click', () => {
+        changePasswordModal?.classList.add('active');
+        changePasswordForm.reset();
+        changePasswordError.style.display = 'none';
+    });
+
+    const changePasswordModalClose = changePasswordModal?.querySelector('.modal-close');
+    const changePasswordModalOverlay = changePasswordModal?.querySelector('.modal-overlay');
+
+    changePasswordModalClose?.addEventListener('click', () => {
+        changePasswordModal?.classList.remove('active');
+    });
+
+    changePasswordModalOverlay?.addEventListener('click', () => {
+        changePasswordModal?.classList.remove('active');
+    });
+
+    // Change Password Form
+    changePasswordForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Hide previous errors
+        if (changePasswordError) {
+            changePasswordError.style.display = 'none';
+            changePasswordError.textContent = '';
+        }
+
+        const oldPassword = document.getElementById('oldPassword')?.value;
+        const newPassword = document.getElementById('newPassword')?.value;
+        const confirmNewPassword = document.getElementById('confirmNewPassword')?.value;
+
+        // Validation
+        if (!oldPassword) {
+            if (changePasswordError) {
+                changePasswordError.textContent = 'Joriy parolni kiriting';
+                changePasswordError.style.display = 'block';
+            }
+            return;
+        }
+
+        if (!newPassword) {
+            if (changePasswordError) {
+                changePasswordError.textContent = 'Yangi parolni kiriting';
+                changePasswordError.style.display = 'block';
+            }
+            return;
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            if (changePasswordError) {
+                changePasswordError.textContent = 'Yangi parollar mos kelmaydi';
+                changePasswordError.style.display = 'block';
+            }
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            if (changePasswordError) {
+                changePasswordError.textContent = 'Parol kamida 6 belgidan iborat bo\'lishi kerak';
+                changePasswordError.style.display = 'block';
+            }
+            return;
+        }
+
+        const submitBtn = changePasswordForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'O\'zgartirilmoqda...';
+        }
+
+        try {
+            const response = await api.post('/api/auth/change-password', {
+                old_password: oldPassword,
+                new_password: newPassword,
+                confirm_password: confirmNewPassword
+            });
+
+            if (!response) {
+                throw new Error('No response from server');
+            }
+
+            if (response.ok) {
+                showNotification('Parol muvaffaqiyatli o\'zgartirildi', 'success');
+                setTimeout(() => {
+                    if (changePasswordModal) {
+                        changePasswordModal.classList.remove('active');
+                    }
+                    if (changePasswordForm) {
+                        changePasswordForm.reset();
+                    }
+                }, 500);
+            } else {
+                const errorMsg = (response.data && response.data.error) ? response.data.error : 'Xatolik yuz berdi';
+                if (changePasswordError) {
+                    changePasswordError.textContent = errorMsg;
+                    changePasswordError.style.display = 'block';
+                } else {
+                    showNotification(errorMsg, 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Change password error:', error);
+            const errorMsg = 'Tarmoq xatosi. Qaytadan urinib ko\'ring';
+            if (changePasswordError) {
+                changePasswordError.textContent = errorMsg;
+                changePasswordError.style.display = 'block';
+            } else {
+                showNotification(errorMsg, 'error');
+            }
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Parolni o\'zgartirish';
+            }
+        }
+    });
 }
 
 // Initialize App
@@ -786,6 +930,7 @@ function initApp() {
 
     // Setup all event listeners
     setupNavigation();
+    setupSidebarToggle();
     setupTransactionFilters();
     setupStatsPeriod();
     setupModals();

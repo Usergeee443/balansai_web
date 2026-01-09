@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balans AI - Kirish</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0088CC 0%, #0077B5 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #0088CC;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        .step {
+            width: 40px;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: #0088CC;
+        }
+
+        .form-step {
+            display: none;
+        }
+
+        .form-step.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .form-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .form-description {
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #0088CC;
+            box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.1);
+        }
+
+        .code-input {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .code-input input {
+            width: 50px;
+            height: 60px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .code-input input:focus {
+            outline: none;
+            border-color: #0088CC;
+            box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #0088CC;
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #0077B5;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 136, 204, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: none;
+            animation: shake 0.5s ease;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .resend-timer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .resend-timer a {
+            color: #0088CC;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .resend-timer a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+
+            .logo h1 {
+                font-size: 28px;
+            }
+
+            .code-input input {
+                width: 45px;
+                height: 55px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>💰 Balans AI</h1>
+            <p>Moliyaviy boshqaruv tizimi</p>
+        </div>
+
+        <div class="step-indicator">
+            <div class="step active" id="step1"></div>
+            <div class="step" id="step2"></div>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <!-- Step 1: Phone Number -->
+        <div class="form-step active" id="phoneStep">
+            <h2 class="form-title">Telefon raqamingizni kiriting</h2>
+            <p class="form-description">Telegram botga tasdiqlash kodi yuboriladi</p>
+
+            <form id="phoneForm">
+                <div class="input-group">
+                    <label for="phoneInput">Telefon raqam</label>
+                    <input
+                        type="tel"
+                        id="phoneInput"
+                        placeholder="+998 90 123 45 67"
+                        required
+                        autocomplete="tel"
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="phoneBtn">
+                    Kod yuborish
+                </button>
+            </form>
+        </div>
+
+        <!-- Step 2: OTP Code -->
+        <div class="form-step" id="codeStep">
+            <h2 class="form-title">Tasdiqlash kodini kiriting</h2>
+            <p class="form-description">Telegram botga yuborilgan 6 raqamli kodni kiriting</p>
+
+            <form id="codeForm">
+                <div class="input-group">
+                    <div class="code-input">
+                        <input type="text" maxlength="1" class="code-digit" data-index="0" autocomplete="off">
+                        <input type="text" maxlength="1" class="code-digit" data-index="1" autocomplete="off">
+                        <input type="text" maxlength="1" class="code-digit" data-index="2" autocomplete="off">
+                        <input type="text" maxlength="1" class="code-digit" data-index="3" autocomplete="off">
+                        <input type="text" maxlength="1" class="code-digit" data-index="4" autocomplete="off">
+                        <input type="text" maxlength="1" class="code-digit" data-index="5" autocomplete="off">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="codeBtn">
+                    Tasdiqlash
+                </button>
+
+                <button type="button" class="btn btn-secondary" id="backBtn">
+                    Orqaga
+                </button>
+
+                <div class="resend-timer">
+                    <span id="timerText">Kod 5 daqiqa amal qiladi</span>
+                    <br>
+                    <a href="#" id="resendLink" style="display: none;">Qayta yuborish</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let phoneNumber = '';
+        let resendTimer = null;
+        let remainingTime = 300; // 5 minutes
+
+        // Elements
+        const phoneStep = document.getElementById('phoneStep');
+        const codeStep = document.getElementById('codeStep');
+        const phoneForm = document.getElementById('phoneForm');
+        const codeForm = document.getElementById('codeForm');
+        const phoneInput = document.getElementById('phoneInput');
+        const phoneBtn = document.getElementById('phoneBtn');
+        const codeBtn = document.getElementById('codeBtn');
+        const backBtn = document.getElementById('backBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const codeDigits = document.querySelectorAll('.code-digit');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const timerText = document.getElementById('timerText');
+        const resendLink = document.getElementById('resendLink');
+
+        // Phone number formatting
+        phoneInput.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 12) value = value.slice(0, 12);
+
+            if (value.length > 0) {
+                let formatted = '+';
+                if (value.length > 0) formatted += value.slice(0, 3);
+                if (value.length > 3) formatted += ' ' + value.slice(3, 5);
+                if (value.length > 5) formatted += ' ' + value.slice(5, 8);
+                if (value.length > 8) formatted += ' ' + value.slice(8, 10);
+                if (value.length > 10) formatted += ' ' + value.slice(10, 12);
+                e.target.value = formatted;
+            }
+        });
+
+        // Code input handling
+        codeDigits.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value;
+                if (value.length === 1 && index < 5) {
+                    codeDigits[index + 1].focus();
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    codeDigits[index - 1].focus();
+                }
+            });
+
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text').replace(/\D/g, '');
+                for (let i = 0; i < pastedData.length && i < 6; i++) {
+                    codeDigits[i].value = pastedData[i];
+                }
+                if (pastedData.length === 6) {
+                    codeDigits[5].focus();
+                }
+            });
+        });
+
+        // Phone form submit
+        phoneForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const phone = phoneInput.value.replace(/\D/g, '');
+            if (phone.length < 12) {
+                showError('To\'liq telefon raqam kiriting');
+                return;
+            }
+
+            phoneNumber = '+' + phone;
+            phoneBtn.disabled = true;
+            phoneBtn.innerHTML = '<span class="loading"></span>Yuborilmoqda...';
+
+            try {
+                const response = await fetch('/api/auth/request-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: phoneNumber })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess('Kod Telegram botga yuborildi!');
+                    setTimeout(() => {
+                        goToCodeStep();
+                        startTimer();
+                    }, 1000);
+                } else {
+                    showError(data.error || 'Xatolik yuz berdi');
+                    phoneBtn.disabled = false;
+                    phoneBtn.innerHTML = 'Kod yuborish';
+                }
+            } catch (error) {
+                showError('Tarmoq xatosi. Qaytadan urinib ko\'ring');
+                phoneBtn.disabled = false;
+                phoneBtn.innerHTML = 'Kod yuborish';
+            }
+        });
+
+        // Code form submit
+        codeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const code = Array.from(codeDigits).map(input => input.value).join('');
+            if (code.length !== 6) {
+                showError('6 raqamli kodni to\'liq kiriting');
+                return;
+            }
+
+            codeBtn.disabled = true;
+            codeBtn.innerHTML = '<span class="loading"></span>Tekshirilmoqda...';
+
+            try {
+                const response = await fetch('/api/auth/verify-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: phoneNumber, code })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess('Muvaffaqiyatli kirdingiz!');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    showError(data.error || 'Kod noto\'g\'ri');
+                    codeDigits.forEach(input => input.value = '');
+                    codeDigits[0].focus();
+                    codeBtn.disabled = false;
+                    codeBtn.innerHTML = 'Tasdiqlash';
+                }
+            } catch (error) {
+                showError('Tarmoq xatosi. Qaytadan urinib ko\'ring');
+                codeBtn.disabled = false;
+                codeBtn.innerHTML = 'Tasdiqlash';
+            }
+        });
+
+        // Back button
+        backBtn.addEventListener('click', () => {
+            goToPhoneStep();
+            stopTimer();
+        });
+
+        // Resend link
+        resendLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            phoneForm.dispatchEvent(new Event('submit'));
+        });
+
+        // Helper functions
+        function goToCodeStep() {
+            phoneStep.classList.remove('active');
+            codeStep.classList.add('active');
+            step1.classList.remove('active');
+            step2.classList.add('active');
+            codeDigits[0].focus();
+        }
+
+        function goToPhoneStep() {
+            codeStep.classList.remove('active');
+            phoneStep.classList.add('active');
+            step2.classList.remove('active');
+            step1.classList.add('active');
+            codeDigits.forEach(input => input.value = '');
+            phoneBtn.disabled = false;
+            phoneBtn.innerHTML = 'Kod yuborish';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.add('show');
+        }
+
+        function hideMessages() {
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+        }
+
+        function startTimer() {
+            remainingTime = 300;
+            updateTimerDisplay();
+            resendTimer = setInterval(() => {
+                remainingTime--;
+                updateTimerDisplay();
+                if (remainingTime <= 0) {
+                    stopTimer();
+                    timerText.style.display = 'none';
+                    resendLink.style.display = 'inline';
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (resendTimer) {
+                clearInterval(resendTimer);
+                resendTimer = null;
+            }
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            timerText.textContent = `Kod ${minutes}:${seconds.toString().padStart(2, '0')} amal qiladi`;
+        }
+    </script>
+</body>
+</html>

@@ -145,9 +145,243 @@ def request_verification_code():
         logger.error(f"Error in request_verification_code: {e}")
         return jsonify({'error': 'Serverda xatolik yuz berdi'}), 500
 
+@app.route('/api/auth/check-password', methods=['POST'])
+def check_password():
+    """Check if user has password set"""
+    try:
+        data = request.get_json()
+        phone_number = data.get('phone')
+
+        if not phone_number:
+            return jsonify({'error': 'Telefon raqam kiritilmadi'}), 400
+
+        # Normalize phone number
+        phone_number = phone_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+        # Check if user exists
+        user = db.get_user_by_phone(phone_number)
+        if not user:
+            return jsonify({'error': 'Bu telefon raqam bazada topilmadi'}), 404
+
+        # Check if user has password
+        has_password = db.user_has_password_by_phone(phone_number)
+
+        return jsonify({
+            'has_password': has_password
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in check_password: {e}")
+        return jsonify({'error': 'Serverda xatolik yuz berdi'}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Login with phone and password"""
+    try:
+        data = request.get_json()
+        phone_number = data.get('phone')
+        password = data.get('password')
+
+        if not phone_number or not password:
+            return jsonify({'error': 'Telefon raqam va parol kiritilishi shart'}), 400
+
+        # Normalize phone number
+        phone_number = phone_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+        # Get user
+        user = db.get_user_by_phone(phone_number)
+        if not user:
+            return jsonify({'error': 'Telefon raqam yoki parol noto\'g\'ri'}), 401
+
+        # Check password
+        if not db.check_password_by_phone(phone_number, password):
+            return jsonify({'error': 'Telefon raqam yoki parol noto\'g\'ri'}), 401
+
+        # Create session
+        session_token = secrets.token_urlsafe(32)
+        ip_address = request.remote_addr
+        user_agent = request.headers.get('User-Agent')
+
+        success = db.create_web_session(
+            user['user_id'],
+            session_token,
+            ip_address,
+            user_agent
+        )
+
+        if not success:
+            return jsonify({'error': 'Sessiya yaratishda xatolik'}), 500
+
+        # Set session cookie
+        session['session_token'] = session_token
+        session['user_id'] = user['user_id']
+
+        return jsonify({
+            'success': True,
+            'message': 'Muvaffaqiyatli kirdingiz',
+            'user': convert_to_serializable(user)
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in login: {e}")
+        return jsonify({'error': 'Serverda xatolik yuz berdi'}), 500
+
+@app.route('/api/auth/set-password', methods=['POST'])
+def set_password():
+    """Set password for first-time login"""
+    try:
+        data = request.get_json()
+        phone_number = data.get('phone')
+        password = data.get('password')
+        confirm_password = data.get('confirm_password')
+
+        if not phone_number or not password:
+            return jsonify({'error': 'Telefon raqam va parol kiritilishi shart'}), 400
+
+        if password != confirm_password:
+            return jsonify({'error': 'Parollar mos kelmaydi'}), 400
+
+        if len(password) < 6:
+            return jsonify({'error': 'Parol kamida 6 belgidan iborat bo\'lishi kerak'}), 400
+
+        # Normalize phone number
+        phone_number = phone_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+        # Get user
+        user = db.get_user_by_phone(phone_number)
+        if not user:
+            return jsonify({'error': 'Foydalanuvchi topilmadi'}), 404
+
+        # Check if user already has password
+        if db.user_has_password(user['user_id']):
+            return jsonify({'error': 'Parol allaqachon o\'rnatilgan'}), 400
+
+        # Set password
+        success = db.set_user_password(user['user_id'], password)
+
+        if not success:
+            return jsonify({'error': 'Parol o\'rnatishda xatolik'}), 500
+
+        # Create session
+        session_token = secrets.token_urlsafe(32)
+        ip_address = request.remote_addr
+        user_agent = request.headers.get('User-Agent')
+
+        db.create_web_session(
+            user['user_id'],
+            session_token,
+            ip_address,
+            user_agent
+        )
+
+        session['session_token'] = session_token
+        session['user_id'] = user['user_id']
+
+        return jsonify({
+            'success': True,
+            'message': 'Parol muvaffaqiyatli o\'rnatildi',
+            'user': convert_to_serializable(user)
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in set_password: {e}")
+        return jsonify({'error': 'Serverda xatolik yuz berdi'}), 500
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def forgot_password():
+    """Request OTP for password reset"""
+    try:
+        data = request.get_json()
+        phone_number = data.get('phone')
+
+        if not phone_number:
+            return jsonify({'error': 'Telefon raqam kiritilmadi'}), 400
+
+        # Normalize phone number
+        phone_number = phone_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+        # Check if user exists
+        user = db.get_user_by_phone(phone_number)
+        if not user:
+            return jsonify({'error': 'Bu telefon raqam bazada topilmadi'}), 404
+
+        # Generate OTP code
+        otp_code = db.create_phone_verification(phone_number)
+        if not otp_code:
+            return jsonify({'error': 'Kod yaratishda xatolik yuz berdi'}), 500
+
+        # Get user's Telegram ID to send OTP
+        telegram_user_id = user.get('user_id')
+
+        # Send OTP via Telegram
+        message = f"🔐 <b>Balans AI parolni tiklash kodi:</b>\n\n<code>{otp_code}</code>\n\nKod {Config.OTP_EXPIRY_MINUTES} daqiqa amal qiladi."
+        result = send_telegram_message(telegram_user_id, message)
+
+        if result and result.get('ok'):
+            return jsonify({
+                'success': True,
+                'message': 'Kod Telegram botga yuborildi',
+                'expires_in': Config.OTP_EXPIRY_MINUTES * 60
+            }), 200
+        else:
+            return jsonify({'error': 'Telegram botga kod yuborishda xatolik'}), 500
+
+    except Exception as e:
+        logger.error(f"Error in forgot_password: {e}")
+        return jsonify({'error': 'Serverda xatolik yuz berdi'}), 500
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    """Reset password using OTP code"""
+    try:
+        data = request.get_json()
+        phone_number = data.get('phone')
+        otp_code = data.get('code')
+        new_password = data.get('password')
+        confirm_password = data.get('confirm_password')
+
+        if not phone_number or not otp_code or not new_password:
+            return jsonify({'error': 'Barcha maydonlar to\'ldirilishi shart'}), 400
+
+        if new_password != confirm_password:
+            return jsonify({'error': 'Parollar mos kelmaydi'}), 400
+
+        if len(new_password) < 6:
+            return jsonify({'error': 'Parol kamida 6 belgidan iborat bo\'lishi kerak'}), 400
+
+        # Normalize phone number
+        phone_number = phone_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+        # Verify OTP code
+        is_valid = db.verify_phone_code(phone_number, otp_code)
+
+        if not is_valid:
+            db.increment_verification_attempts(phone_number)
+            return jsonify({'error': 'Kod noto\'g\'ri yoki muddati o\'tgan'}), 400
+
+        # Get user
+        user = db.get_user_by_phone(phone_number)
+        if not user:
+            return jsonify({'error': 'Foydalanuvchi topilmadi'}), 404
+
+        # Set new password
+        success = db.set_user_password(user['user_id'], new_password)
+
+        if not success:
+            return jsonify({'error': 'Parol o\'zgartirishda xatolik'}), 500
+
+        return jsonify({
+            'success': True,
+            'message': 'Parol muvaffaqiyatli o\'zgartirildi'
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in reset_password: {e}")
+        return jsonify({'error': 'Serverda xatolik yuz berdi'}), 500
+
 @app.route('/api/auth/verify-code', methods=['POST'])
 def verify_code():
-    """Verify OTP code and create session"""
+    """Verify OTP code and create session (for backward compatibility)"""
     try:
         data = request.get_json()
         phone_number = data.get('phone')
@@ -269,6 +503,44 @@ def update_user_info(user_id):
         return jsonify({'error': 'Yangilashda xatolik'}), 500
     except Exception as e:
         logger.error(f"Error in update_user_info: {e}")
+        return jsonify({'error': 'Xatolik yuz berdi'}), 500
+
+@app.route('/api/auth/change-password', methods=['POST'])
+@login_required
+def change_password():
+    """Change user password"""
+    try:
+        data = request.get_json()
+        old_password = data.get('old_password')
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+
+        if not old_password or not new_password:
+            return jsonify({'error': 'Eski va yangi parol kiritilishi shart'}), 400
+
+        if new_password != confirm_password:
+            return jsonify({'error': 'Yangi parollar mos kelmaydi'}), 400
+
+        if len(new_password) < 6:
+            return jsonify({'error': 'Parol kamida 6 belgidan iborat bo\'lishi kerak'}), 400
+
+        # Check old password
+        if not db.check_user_password(request.user_id, old_password):
+            return jsonify({'error': 'Eski parol noto\'g\'ri'}), 401
+
+        # Set new password
+        success = db.set_user_password(request.user_id, new_password)
+
+        if not success:
+            return jsonify({'error': 'Parol o\'zgartirishda xatolik'}), 500
+
+        return jsonify({
+            'success': True,
+            'message': 'Parol muvaffaqiyatli o\'zgartirildi'
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in change_password: {e}")
         return jsonify({'error': 'Xatolik yuz berdi'}), 500
 
 # ==================== TRANSACTION ROUTES ====================

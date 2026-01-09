@@ -6,6 +6,7 @@ import logging
 from decimal import Decimal
 import random
 import string
+from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 
 logging.basicConfig(level=logging.INFO)
@@ -130,6 +131,16 @@ def init_database():
                 INDEX idx_assigned (assigned_to)
             )
         """)
+
+        # Add password column to users table if it doesn't exist
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL")
+            logger.info("Added password_hash column to users table")
+        except mysql.connector.Error as e:
+            if e.errno == 1060:  # Duplicate column name
+                logger.info("password_hash column already exists")
+            else:
+                logger.error(f"Error adding password_hash column: {e}")
 
         conn.commit()
         cursor.close()
@@ -363,6 +374,55 @@ def update_user(user_id, **kwargs):
         return True
     except Exception as e:
         logger.error(f"Error updating user: {e}")
+        return False
+
+def set_user_password(user_id, password):
+    """Set or update user password"""
+    try:
+        password_hash = generate_password_hash(password)
+        return update_user(user_id, password_hash=password_hash)
+    except Exception as e:
+        logger.error(f"Error setting user password: {e}")
+        return False
+
+def check_user_password(user_id, password):
+    """Check if password matches user's password"""
+    try:
+        user = get_user(user_id)
+        if not user or not user.get('password_hash'):
+            return False
+        return check_password_hash(user['password_hash'], password)
+    except Exception as e:
+        logger.error(f"Error checking user password: {e}")
+        return False
+
+def check_password_by_phone(phone_number, password):
+    """Check password for user by phone number"""
+    try:
+        user = get_user_by_phone(phone_number)
+        if not user or not user.get('password_hash'):
+            return False
+        return check_password_hash(user['password_hash'], password)
+    except Exception as e:
+        logger.error(f"Error checking password by phone: {e}")
+        return False
+
+def user_has_password(user_id):
+    """Check if user has a password set"""
+    try:
+        user = get_user(user_id)
+        return user and user.get('password_hash') is not None
+    except Exception as e:
+        logger.error(f"Error checking if user has password: {e}")
+        return False
+
+def user_has_password_by_phone(phone_number):
+    """Check if user has a password set by phone number"""
+    try:
+        user = get_user_by_phone(phone_number)
+        return user and user.get('password_hash') is not None
+    except Exception as e:
+        logger.error(f"Error checking if user has password by phone: {e}")
         return False
 
 # ==================== TRANSACTION FUNCTIONS ====================

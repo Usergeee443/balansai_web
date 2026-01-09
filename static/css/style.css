@@ -84,12 +84,44 @@ body {
 .sidebar-header {
     padding: 20px;
     border-bottom: 1px solid var(--tg-divider);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    min-height: 60px;
 }
 
 .sidebar-logo {
     display: flex;
     align-items: center;
     gap: 12px;
+    transition: var(--tg-transition);
+}
+
+.sidebar-toggle-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--tg-bg-secondary);
+    border-radius: var(--tg-radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--tg-transition);
+    color: var(--tg-text-secondary);
+    font-size: 14px;
+    padding: 0;
+}
+
+.sidebar-toggle-btn:hover {
+    background: var(--tg-primary);
+    color: white;
+}
+
+.toggle-icon {
+    transition: transform 0.3s ease;
+    display: inline-block;
 }
 
 .sidebar-logo-icon {
@@ -157,6 +189,13 @@ body {
     font-size: 22px;
     width: 24px;
     text-align: center;
+    flex-shrink: 0;
+}
+
+.sidebar-menu-item span:not(.sidebar-menu-icon) {
+    white-space: nowrap;
+    transition: var(--tg-transition);
+    opacity: 1;
 }
 
 .sidebar-footer {
@@ -194,6 +233,8 @@ body {
 .sidebar-user-info {
     flex: 1;
     min-width: 0;
+    transition: var(--tg-transition);
+    opacity: 1;
 }
 
 .sidebar-user-name {
@@ -1077,6 +1118,65 @@ body {
     padding: 11px 14px;
     border: 1px solid var(--tg-border);
     border-radius: var(--tg-radius-md);
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    transition: var(--tg-transition);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--tg-primary);
+}
+
+.error-message {
+    background: #fee;
+    color: #c33;
+    padding: 12px;
+    border-radius: var(--tg-radius-md);
+    font-size: 14px;
+    margin-bottom: 16px;
+    border: 1px solid #fcc;
+}
+
+.error-message.show {
+    display: block;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--tg-border);
+    border-radius: var(--tg-radius-md);
+    font-size: 14px;
+    font-family: inherit;
+    transition: var(--tg-transition);
+    background: var(--tg-bg);
+    color: var(--tg-text-primary);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--tg-primary);
+    box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.1);
+}
+
+.form-group input[type="password"] {
+    letter-spacing: 2px;
+}
+
+    border-radius: var(--tg-radius-md);
     font-size: 15px;
     font-family: inherit;
     transition: var(--tg-transition);
@@ -1171,6 +1271,87 @@ body {
 }
 
 /* Desktop Responsive */
+/* Sidebar Collapsed State */
+.sidebar-nav {
+    transition: width 0.3s ease;
+}
+
+.sidebar-nav.collapsed {
+    width: 80px;
+}
+
+.sidebar-nav.collapsed .sidebar-logo-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    margin: 0;
+}
+
+.sidebar-nav.collapsed .sidebar-menu-item {
+    justify-content: center;
+    padding: 12px;
+    gap: 0;
+}
+
+.sidebar-nav.collapsed .sidebar-menu-item span:not(.sidebar-menu-icon) {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    margin: 0;
+}
+
+.sidebar-nav.collapsed .sidebar-user-info {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    margin: 0;
+}
+
+.sidebar-nav.collapsed .sidebar-user {
+    justify-content: center;
+    padding: 8px;
+    gap: 0;
+}
+
+.sidebar-nav.collapsed .sidebar-user-avatar {
+    margin: 0 auto;
+}
+
+.sidebar-nav.collapsed .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.sidebar-nav.collapsed .sidebar-header {
+    padding: 20px 12px;
+    justify-content: center;
+}
+
+.sidebar-nav.collapsed .sidebar-logo {
+    justify-content: center;
+    gap: 0;
+}
+
+.sidebar-nav.collapsed .sidebar-header {
+    padding: 20px 8px;
+}
+
+.sidebar-nav.collapsed .sidebar-toggle-btn {
+    position: absolute;
+    right: -16px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 101;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    background: var(--tg-bg);
+    border: 1px solid var(--tg-border);
+}
+
+.sidebar-nav.collapsed .sidebar-toggle-btn:hover {
+    background: var(--tg-primary);
+    border-color: var(--tg-primary);
+    color: white;
+}
+
 @media (min-width: 768px) {
     .sidebar-nav {
         display: flex;
@@ -1178,7 +1359,13 @@ body {
 
     .main-content {
         margin-left: 260px;
+        transition: margin-left 0.3s ease;
     }
+
+    .sidebar-nav.collapsed ~ .main-content {
+        margin-left: 80px;
+    }
+}
 
     .app-header {
         display: none;

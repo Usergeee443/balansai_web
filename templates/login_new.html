@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Balans AI - Kirish</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -286,14 +285,13 @@
 <body>
     <div class="login-container">
         <div class="logo">
-            <h1><i class="fas fa-wallet"></i> Balans AI</h1>
+            <h1>💰 Balans AI</h1>
             <p>Moliyaviy boshqaruv tizimi</p>
         </div>
 
         <div class="step-indicator">
             <div class="step active" id="step1"></div>
             <div class="step" id="step2"></div>
-            <div class="step" id="step3"></div>
         </div>
 
         <div id="errorMessage" class="error-message"></div>
@@ -322,40 +320,7 @@
             </form>
         </div>
 
-        <!-- Step 2: OTP Verification (for first login) -->
-        <div class="form-step" id="otpStep">
-            <h2 class="form-title">Telefon raqamni tasdiqlash</h2>
-            <p class="form-description">Telegram botga yuborilgan 6 raqamli kodni kiriting</p>
-
-            <form id="otpForm">
-                <div class="input-group">
-                    <div class="code-input">
-                        <input type="text" maxlength="1" class="otp-digit" data-index="0" autocomplete="off">
-                        <input type="text" maxlength="1" class="otp-digit" data-index="1" autocomplete="off">
-                        <input type="text" maxlength="1" class="otp-digit" data-index="2" autocomplete="off">
-                        <input type="text" maxlength="1" class="otp-digit" data-index="3" autocomplete="off">
-                        <input type="text" maxlength="1" class="otp-digit" data-index="4" autocomplete="off">
-                        <input type="text" maxlength="1" class="otp-digit" data-index="5" autocomplete="off">
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary" id="otpBtn">
-                    Tasdiqlash
-                </button>
-
-                <button type="button" class="btn btn-secondary" id="backToPhoneBtn">
-                    Orqaga
-                </button>
-
-                <div class="resend-timer">
-                    <span id="timerText">Kod 5 daqiqa amal qiladi</span>
-                    <br>
-                    <a href="#" id="resendOtpLink" style="display: none;">Qayta yuborish</a>
-                </div>
-            </form>
-        </div>
-
-        <!-- Step 3: Password or Set Password -->
+        <!-- Step 2: Password or Set Password -->
         <div class="form-step" id="passwordStep">
             <h2 class="form-title" id="passwordTitle">Parolni kiriting</h2>
             <p class="form-description" id="passwordDescription">Hisobingizga kirish uchun parolni kiriting</p>
@@ -391,12 +356,12 @@
                 </button>
 
                 <div class="forgot-password-link" id="forgotPasswordLink">
-                    <a href="#" id="forgotPasswordLinkBtn">Parolni unutdim</a>
+                    <a href="#" id="forgotPasswordBtn">Parolni unutdim</a>
                 </div>
             </form>
         </div>
 
-        <!-- Step 4: Forgot Password - OTP Code -->
+        <!-- Step 3: Forgot Password - OTP Code -->
         <div class="form-step" id="forgotPasswordStep">
             <h2 class="form-title">Parolni tiklash</h2>
             <p class="form-description">Telegram botga yuborilgan kodni kiriting</p>
@@ -448,16 +413,12 @@
         let phoneNumber = '';
         let hasPassword = false;
         let isFirstLogin = false;
-        let resendTimer = null;
-        let remainingTime = 300; // 5 minutes
 
         // Elements
         const phoneStep = document.getElementById('phoneStep');
-        const otpStep = document.getElementById('otpStep');
         const passwordStep = document.getElementById('passwordStep');
         const forgotPasswordStep = document.getElementById('forgotPasswordStep');
         const phoneForm = document.getElementById('phoneForm');
-        const otpForm = document.getElementById('otpForm');
         const passwordForm = document.getElementById('passwordForm');
         const forgotPasswordForm = document.getElementById('forgotPasswordForm');
         const phoneInput = document.getElementById('phoneInput');
@@ -466,22 +427,16 @@
         const newPasswordInput = document.getElementById('newPasswordInput');
         const confirmNewPasswordInput = document.getElementById('confirmNewPasswordInput');
         const phoneBtn = document.getElementById('phoneBtn');
-        const otpBtn = document.getElementById('otpBtn');
         const passwordBtn = document.getElementById('passwordBtn');
         const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
         const backBtn = document.getElementById('backBtn');
-        const backToPhoneBtn = document.getElementById('backToPhoneBtn');
         const backToPasswordBtn = document.getElementById('backToPasswordBtn');
-        const forgotPasswordLinkBtn = document.getElementById('forgotPasswordLinkBtn');
-        const resendOtpLink = document.getElementById('resendOtpLink');
+        const forgotPasswordLinkBtn = document.getElementById('forgotPasswordBtn');
         const errorMessage = document.getElementById('errorMessage');
         const successMessage = document.getElementById('successMessage');
-        const otpDigits = document.querySelectorAll('.otp-digit');
         const codeDigits = document.querySelectorAll('.code-digit');
         const step1 = document.getElementById('step1');
         const step2 = document.getElementById('step2');
-        const step3 = document.getElementById('step3');
-        const timerText = document.getElementById('timerText');
         const passwordTitle = document.getElementById('passwordTitle');
         const passwordDescription = document.getElementById('passwordDescription');
         const passwordLabel = document.getElementById('passwordLabel');
@@ -506,35 +461,7 @@
             }
         });
 
-        // OTP input handling (for first login)
-        otpDigits.forEach((input, index) => {
-            input.addEventListener('input', (e) => {
-                const value = e.target.value.replace(/\D/g, '');
-                e.target.value = value;
-                if (value.length === 1 && index < 5) {
-                    otpDigits[index + 1].focus();
-                }
-            });
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                    otpDigits[index - 1].focus();
-                }
-            });
-
-            input.addEventListener('paste', (e) => {
-                e.preventDefault();
-                const pastedData = e.clipboardData.getData('text').replace(/\D/g, '');
-                for (let i = 0; i < pastedData.length && i < 6; i++) {
-                    otpDigits[i].value = pastedData[i];
-                }
-                if (pastedData.length === 6) {
-                    otpDigits[5].focus();
-                }
-            });
-        });
-
-        // Code input handling (for forgot password)
+        // Code input handling
         codeDigits.forEach((input, index) => {
             input.addEventListener('input', (e) => {
                 const value = e.target.value.replace(/\D/g, '');
@@ -579,96 +506,33 @@
 
             try {
                 // Check if user has password
-                const checkResponse = await fetch('/api/auth/check-password', {
+                const response = await fetch('/api/auth/check-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone: phoneNumber })
                 });
 
-                const checkData = await checkResponse.json();
+                const data = await response.json();
 
-                if (checkResponse.ok) {
-                    hasPassword = checkData.has_password;
+                if (response.ok) {
+                    hasPassword = data.has_password;
                     isFirstLogin = !hasPassword;
 
                     if (hasPassword) {
                         // User has password, go to password step
                         goToPasswordStep();
                     } else {
-                        // First login, need to verify phone with OTP first
-                        // Request OTP code
-                        const otpResponse = await fetch('/api/auth/request-code', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ phone: phoneNumber })
-                        });
-
-                        const otpData = await otpResponse.json();
-
-                        if (otpResponse.ok) {
-                            // Go to OTP step immediately, then show success message
-                            goToOtpStep();
-                            startTimer();
-                            setTimeout(() => {
-                                showSuccess('Kod Telegram botga yuborildi!');
-                            }, 100);
-                        } else {
-                            showError(otpData.error || 'Kod yuborishda xatolik');
-                            phoneBtn.disabled = false;
-                            phoneBtn.innerHTML = 'Davom etish';
-                        }
+                        // First login, need to set password
+                        goToSetPasswordStep();
                     }
                 } else {
-                    showError(checkData.error || 'Xatolik yuz berdi');
+                    showError(data.error || 'Xatolik yuz berdi');
                 }
             } catch (error) {
                 showError('Tarmoq xatosi. Qaytadan urinib ko\'ring');
             } finally {
                 phoneBtn.disabled = false;
                 phoneBtn.innerHTML = 'Davom etish';
-            }
-        });
-
-        // OTP form submit (for first login verification)
-        otpForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideMessages();
-
-            const code = Array.from(otpDigits).map(input => input.value).join('');
-            if (code.length !== 6) {
-                showError('6 raqamli kodni to\'liq kiriting');
-                return;
-            }
-
-            otpBtn.disabled = true;
-            otpBtn.innerHTML = '<span class="loading"></span>Tekshirilmoqda...';
-
-            try {
-                const response = await fetch('/api/auth/verify-code', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: phoneNumber, code })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    showSuccess('Telefon raqam tasdiqlandi!');
-                    stopTimer();
-                    setTimeout(() => {
-                        goToSetPasswordStep();
-                    }, 1000);
-                } else {
-                    showError(data.error || 'Kod noto\'g\'ri');
-                    otpDigits.forEach(input => input.value = '');
-                    otpDigits[0].focus();
-                    otpBtn.disabled = false;
-                    otpBtn.innerHTML = 'Tasdiqlash';
-                }
-            } catch (error) {
-                showError('Tarmoq xatosi. Qaytadan urinib ko\'ring');
-                otpBtn.disabled = false;
-                otpBtn.innerHTML = 'Tasdiqlash';
             }
         });
 
@@ -877,101 +741,32 @@
 
         // Back buttons
         backBtn.addEventListener('click', () => {
-            if (isFirstLogin) {
-                goToOtpStep();
-            } else {
-                goToPhoneStep();
-            }
-        });
-
-        backToPhoneBtn.addEventListener('click', () => {
             goToPhoneStep();
-            stopTimer();
         });
 
         backToPasswordBtn.addEventListener('click', () => {
             goToPasswordStep();
         });
 
-        // Resend OTP link
-        resendOtpLink.addEventListener('click', async (e) => {
-            e.preventDefault();
-            hideMessages();
-            
-            resendOtpLink.style.pointerEvents = 'none';
-            resendOtpLink.textContent = 'Yuborilmoqda...';
-
-            try {
-                const response = await fetch('/api/auth/request-code', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: phoneNumber })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    showSuccess('Kod qayta yuborildi!');
-                    startTimer();
-                } else {
-                    showError(data.error || 'Kod yuborishda xatolik');
-                }
-            } catch (error) {
-                showError('Tarmoq xatosi. Qaytadan urinib ko\'ring');
-            } finally {
-                resendOtpLink.style.pointerEvents = 'auto';
-                resendOtpLink.textContent = 'Qayta yuborish';
-            }
-        });
-
         // Navigation functions
         function goToPhoneStep() {
             phoneStep.classList.add('active');
-            otpStep.classList.remove('active');
             passwordStep.classList.remove('active');
             forgotPasswordStep.classList.remove('active');
             step1.classList.add('active');
             step2.classList.remove('active');
-            step3.classList.remove('active');
             phoneInput.value = '';
             passwordInput.value = '';
             confirmPasswordInput.value = '';
-            otpDigits.forEach(input => input.value = '');
-            stopTimer();
             hideMessages();
-        }
-
-        function goToOtpStep() {
-            // Hide all steps first
-            phoneStep.classList.remove('active');
-            passwordStep.classList.remove('active');
-            forgotPasswordStep.classList.remove('active');
-            
-            // Show OTP step
-            otpStep.classList.add('active');
-            
-            // Update step indicators
-            step1.classList.add('active');
-            step2.classList.add('active');
-            step3.classList.remove('active');
-            
-            // Clear OTP inputs
-            otpDigits.forEach(input => input.value = '');
-            
-            // Focus first input
-            setTimeout(() => {
-                otpDigits[0].focus();
-            }, 300);
         }
 
         function goToPasswordStep() {
             phoneStep.classList.remove('active');
-            otpStep.classList.remove('active');
             passwordStep.classList.add('active');
             forgotPasswordStep.classList.remove('active');
             step1.classList.add('active');
             step2.classList.add('active');
-            step3.classList.add('active');
             passwordTitle.textContent = 'Parolni kiriting';
             passwordDescription.textContent = 'Hisobingizga kirish uchun parolni kiriting';
             passwordLabel.textContent = 'Parol';
@@ -984,12 +779,10 @@
 
         function goToSetPasswordStep() {
             phoneStep.classList.remove('active');
-            otpStep.classList.remove('active');
             passwordStep.classList.add('active');
             forgotPasswordStep.classList.remove('active');
             step1.classList.add('active');
             step2.classList.add('active');
-            step3.classList.add('active');
             passwordTitle.textContent = 'Parol o\'ylab toping';
             passwordDescription.textContent = 'Xavfsizlik uchun parol o\'ylab toping (kamida 6 belgi)';
             passwordLabel.textContent = 'Yangi parol';
@@ -1002,47 +795,15 @@
 
         function goToForgotPasswordStep() {
             phoneStep.classList.remove('active');
-            otpStep.classList.remove('active');
             passwordStep.classList.remove('active');
             forgotPasswordStep.classList.add('active');
             step1.classList.add('active');
             step2.classList.add('active');
-            step3.classList.add('active');
             codeDigits.forEach(input => input.value = '');
             newPasswordGroup.style.display = 'none';
             confirmNewPasswordGroup.style.display = 'none';
             forgotPasswordBtn.innerHTML = 'Tasdiqlash';
             codeDigits[0].focus();
-        }
-
-        // Timer functions
-        function startTimer() {
-            remainingTime = 300;
-            updateTimerDisplay();
-            timerText.style.display = 'block';
-            resendOtpLink.style.display = 'none';
-            resendTimer = setInterval(() => {
-                remainingTime--;
-                updateTimerDisplay();
-                if (remainingTime <= 0) {
-                    stopTimer();
-                    timerText.style.display = 'none';
-                    resendOtpLink.style.display = 'inline';
-                }
-            }, 1000);
-        }
-
-        function stopTimer() {
-            if (resendTimer) {
-                clearInterval(resendTimer);
-                resendTimer = null;
-            }
-        }
-
-        function updateTimerDisplay() {
-            const minutes = Math.floor(remainingTime / 60);
-            const seconds = remainingTime % 60;
-            timerText.textContent = `Kod ${minutes}:${seconds.toString().padStart(2, '0')} amal qiladi`;
         }
 
         function showError(message) {
