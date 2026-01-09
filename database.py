@@ -448,19 +448,24 @@ def get_balance(user_id):
         return 0
 
 def get_statistics(user_id, period='month'):
-    """Get user statistics"""
+    """Get comprehensive user statistics"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
         # Determine date range based on period
+        days_back = 30
         if period == 'week':
+            days_back = 7
             date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
         elif period == 'month':
+            days_back = 30
             date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
         elif period == 'year':
+            days_back = 365
             date_filter = "DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)"
         else:
+            days_back = 30
             date_filter = "1=1"
 
         # Get income and expense totals
@@ -468,24 +473,101 @@ def get_statistics(user_id, period='month'):
             SELECT
                 SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as total_income,
                 SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as total_expense,
-                COUNT(*) as total_transactions
+                COUNT(*) as total_transactions,
+                COUNT(CASE WHEN transaction_type = 'income' THEN 1 END) as income_count,
+                COUNT(CASE WHEN transaction_type = 'expense' THEN 1 END) as expense_count,
+                AVG(CASE WHEN transaction_type = 'income' THEN amount END) as avg_income,
+                AVG(CASE WHEN transaction_type = 'expense' THEN amount END) as avg_expense,
+                MAX(CASE WHEN transaction_type = 'income' THEN amount END) as max_income,
+                MAX(CASE WHEN transaction_type = 'expense' THEN amount END) as max_expense
             FROM transactions
             WHERE user_id = %s AND {date_filter}
         """, (user_id,))
 
         stats = cursor.fetchone()
 
+        # Get category breakdown for expenses
+        cursor.execute(f"""
+            SELECT 
+                category,
+                SUM(amount) as total_amount,
+                COUNT(*) as count
+            FROM transactions
+            WHERE user_id = %s AND transaction_type = 'expense' AND {date_filter} AND category IS NOT NULL AND category != ''
+            GROUP BY category
+            ORDER BY total_amount DESC
+            LIMIT 10
+        """, (user_id,))
+        category_breakdown = cursor.fetchall()
+
+        # Get daily distribution (last 7/30/365 days based on period)
+        if period == 'week':
+            group_format = "%Y-%m-%d"
+        elif period == 'month':
+            group_format = "%Y-%m-%d"
+        else:  # year
+            group_format = "%Y-%m"
+
+        cursor.execute(f"""
+            SELECT 
+                DATE_FORMAT(created_at, %s) as date,
+                SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as daily_income,
+                SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as daily_expense,
+                COUNT(*) as daily_transactions
+            FROM transactions
+            WHERE user_id = %s AND {date_filter}
+            GROUP BY DATE_FORMAT(created_at, %s)
+            ORDER BY date ASC
+        """, (group_format, user_id, group_format))
+        daily_distribution = cursor.fetchall()
+
+        # Get top transactions
+        cursor.execute(f"""
+            SELECT * FROM transactions
+            WHERE user_id = %s AND {date_filter}
+            ORDER BY amount DESC
+            LIMIT 5
+        """, (user_id,))
+        top_transactions = cursor.fetchall()
+
         cursor.close()
         conn.close()
 
+        # Calculate additional metrics
+        total_income = float(stats['total_income']) if stats['total_income'] else 0
+        total_expense = float(stats['total_expense']) if stats['total_expense'] else 0
+        net_balance = total_income - total_expense
+        expense_ratio = (total_expense / total_income * 100) if total_income > 0 else 0
+        avg_daily_expense = total_expense / days_back if days_back > 0 else 0
+
         return {
-            'total_income': float(stats['total_income']) if stats['total_income'] else 0,
-            'total_expense': float(stats['total_expense']) if stats['total_expense'] else 0,
-            'total_transactions': stats['total_transactions']
+            'total_income': total_income,
+            'total_expense': total_expense,
+            'net_balance': net_balance,
+            'total_transactions': stats['total_transactions'] or 0,
+            'income_count': stats['income_count'] or 0,
+            'expense_count': stats['expense_count'] or 0,
+            'avg_income': float(stats['avg_income']) if stats['avg_income'] else 0,
+            'avg_expense': float(stats['avg_expense']) if stats['avg_expense'] else 0,
+            'max_income': float(stats['max_income']) if stats['max_income'] else 0,
+            'max_expense': float(stats['max_expense']) if stats['max_expense'] else 0,
+            'expense_ratio': round(expense_ratio, 2),
+            'avg_daily_expense': round(avg_daily_expense, 2),
+            'category_breakdown': category_breakdown,
+            'daily_distribution': daily_distribution,
+            'top_transactions': top_transactions,
+            'period_days': days_back
         }
     except Exception as e:
         logger.error(f"Error getting statistics: {e}")
-        return {'total_income': 0, 'total_expense': 0, 'total_transactions': 0}
+        return {
+            'total_income': 0, 'total_expense': 0, 'net_balance': 0,
+            'total_transactions': 0, 'income_count': 0, 'expense_count': 0,
+            'avg_income': 0, 'avg_expense': 0, 'max_income': 0, 'max_expense': 0,
+            'expense_ratio': 0, 'avg_daily_expense': 0,
+            'category_breakdown': [], 'daily_distribution': [], 'top_transactions': [],
+            'period_days': 30
+        }
 
 # ==================== DEBT FUNCTIONS ====================
 

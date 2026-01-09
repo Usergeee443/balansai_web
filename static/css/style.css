@@ -1273,3 +1273,238 @@ html {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--tg-text-tertiary);
 }
+
+/* ==================== SKELETON LOADING ==================== */
+.skeleton-line {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton-stat-card,
+.skeleton-summary-item,
+.skeleton-metric-card {
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.skeleton-chart {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tg-bg-secondary);
+    border-radius: var(--tg-radius-md);
+}
+
+.skeleton-balance {
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.skeleton-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--tg-bg-secondary);
+    border-radius: var(--tg-radius-md);
+}
+
+/* ==================== STATISTICS ENHANCEMENTS ==================== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.stat-card-wrapper {
+    background: var(--tg-bg);
+    border-radius: var(--tg-radius-lg);
+    padding: 16px;
+    box-shadow: var(--tg-shadow-sm);
+    border: 1px solid var(--tg-border);
+}
+
+.stat-card-label {
+    font-size: 12px;
+    color: var(--tg-text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-card-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--tg-text-primary);
+}
+
+.stat-card-value.income {
+    color: var(--tg-income);
+}
+
+.stat-card-value.expense {
+    color: var(--tg-expense);
+}
+
+.stats-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.metric-card {
+    background: var(--tg-bg);
+    border-radius: var(--tg-radius-lg);
+    padding: 16px;
+    box-shadow: var(--tg-shadow-sm);
+    border: 1px solid var(--tg-border);
+}
+
+.metric-label {
+    font-size: 12px;
+    color: var(--tg-text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metric-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--tg-text-primary);
+}
+
+.metric-value.income {
+    color: var(--tg-income);
+}
+
+.metric-value.expense {
+    color: var(--tg-expense);
+}
+
+/* Category Breakdown */
+.category-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--tg-divider);
+}
+
+.category-item:last-child {
+    border-bottom: none;
+}
+
+.category-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.category-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tg-text-primary);
+}
+
+.category-count {
+    font-size: 12px;
+    color: var(--tg-text-secondary);
+}
+
+.category-amount {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--tg-text-primary);
+    margin-bottom: 8px;
+}
+
+.category-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--tg-bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.category-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--tg-primary) 0%, var(--tg-primary-light) 100%);
+    transition: width 0.3s ease;
+}
+
+.category-percentage {
+    font-size: 12px;
+    color: var(--tg-text-secondary);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--tg-text-secondary);
+    font-size: 14px;
+}
+
+/* Responsive Statistics */
+@media (min-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .metrics-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .stats-sections {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .stats-sections {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .metrics-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}

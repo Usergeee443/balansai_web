@@ -86,7 +86,6 @@ def business_required(f):
         if subscription != 'business':
             return jsonify({
                 'error': 'Business tarifi kerak',
-                'redirect': 'https://balansai-app.onrender.com',
                 'message': 'Bu funksiya faqat Business tarifi uchun mavjud'
             }), 403
 
@@ -236,16 +235,6 @@ def index():
     session_token = session.get('session_token')
     if not session_token or not db.get_session(session_token):
         return redirect(url_for('login_page'))
-
-    # Check if user has Business subscription
-    user_session = db.get_session(session_token)
-    if user_session:
-        user = db.get_user(user_session['user_id'])
-        if user:
-            subscription = user.get('subscription', 'free').lower()
-            if subscription != 'business':
-                # Redirect non-business users to the mobile app
-                return redirect('https://balansai-app.onrender.com')
 
     return render_template('index.html')
 

@@ -5,10 +5,9 @@
 ### Major Features Added
 
 #### 1. Business Tariff Verification
-- ✅ Added Business subscription requirement for web access
-- ✅ Non-business users are automatically redirected to https://balansai-app.onrender.com
-- ✅ New `business_required` decorator for API endpoints
-- ✅ Subscription check on main page load
+- ✅ Added Business subscription requirement for specific features
+- ✅ New `business_required` decorator for API endpoints (returns error message instead of redirect)
+- ✅ All users can now access the web app regardless of subscription type
 
 #### 2. Warehouse Management System
 - ✅ Product inventory tracking
@@ -75,8 +74,8 @@ All API requests were returning 401 (Unauthorized) errors because users weren't 
 1. Navigate to the web application
 2. Login with your phone number (registered in Telegram bot)
 3. Enter OTP code sent to your Telegram
-4. ⚠️ **Important**: Only Business plan subscribers can access the web version
-5. Free/Plus users will be redirected to the mobile app
+4. Access all features - some advanced features require Business subscription
+5. Works on both desktop and mobile devices
 
 ### For Developers:
 All new tables will be created automatically on first run. The `init_database()` function creates:
@@ -90,8 +89,9 @@ All new tables will be created automatically on first run. The `init_database()`
 - `year` - Last 365 days
 
 ## Breaking Changes
-- Web access now requires Business subscription
-- Non-business users are redirected to mobile app
+- Removed automatic redirect to mobile app
+- All users can now access the web version
+- Business subscription only required for specific advanced features
 
 ## Next Steps (Future Enhancements)
 - Add UI components for warehouse, employees, and tasks

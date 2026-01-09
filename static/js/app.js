@@ -152,6 +152,9 @@ function loadPageData(pageId) {
 
 // Dashboard
 async function loadDashboard() {
+    // Show skeleton loaders
+    showDashboardSkeleton();
+    
     try {
         // Load user info
         const userResponse = await api.get('/api/auth/me');
@@ -177,8 +180,37 @@ async function loadDashboard() {
         if (transactionsResponse.ok) {
             renderRecentTransactions(transactionsResponse.data);
         }
+        
+        // Hide skeleton loaders
+        hideDashboardSkeleton();
     } catch (error) {
         console.error('Error loading dashboard:', error);
+        hideDashboardSkeleton();
+    }
+}
+
+function showDashboardSkeleton() {
+    // Skeleton loaders are shown by default in HTML
+    document.getElementById('skeletonBalance').style.display = 'block';
+    document.getElementById('balanceContent').style.display = 'none';
+    document.getElementById('skeletonTransactions').style.display = 'block';
+}
+
+function hideDashboardSkeleton() {
+    document.getElementById('skeletonBalance').style.display = 'none';
+    document.getElementById('balanceContent').style.display = 'block';
+    document.getElementById('skeletonTransactions').style.display = 'none';
+    
+    // Show stat values
+    const incomeAmount = document.getElementById('incomeAmount');
+    const expenseAmount = document.getElementById('expenseAmount');
+    if (incomeAmount) {
+        incomeAmount.style.display = 'block';
+        incomeAmount.previousElementSibling.style.display = 'none';
+    }
+    if (expenseAmount) {
+        expenseAmount.style.display = 'block';
+        expenseAmount.previousElementSibling.style.display = 'none';
     }
 }
 
@@ -220,12 +252,16 @@ function renderRecentTransactions(transactions) {
     const container = document.getElementById('recentTransactions');
     if (!container) return;
 
+    // Hide skeleton
+    const skeleton = document.getElementById('skeletonTransactions');
+    if (skeleton) skeleton.style.display = 'none';
+
     if (transactions.length === 0) {
-        container.innerHTML = '<div class="loading">Tranzaksiyalar yo\'q</div>';
+        container.innerHTML = '<div class="empty-state">Tranzaksiyalar yo\'q</div>';
         return;
     }
 
-    container.innerHTML = transactions.map(transaction => `
+    const transactionsHTML = transactions.map(transaction => `
         <div class="transaction-item">
             <div class="transaction-icon ${transaction.transaction_type}">
                 ${transaction.transaction_type === 'income' ? '📈' : '📉'}
@@ -242,20 +278,44 @@ function renderRecentTransactions(transactions) {
             </div>
         </div>
     `).join('');
+    
+    // Append to container instead of replacing all content
+    container.innerHTML = transactionsHTML;
 }
 
 // Transactions
 async function loadTransactions() {
+    // Show skeleton loader
+    showTransactionsSkeleton();
+    
     try {
         const type = state.currentFilter === 'all' ? '' : `&type=${state.currentFilter}`;
         const response = await api.get(`/api/transactions?limit=50${type}`);
 
         if (response.ok) {
             state.transactions = response.data;
+            hideTransactionsSkeleton();
             renderTransactions(response.data);
+        } else {
+            hideTransactionsSkeleton();
         }
     } catch (error) {
         console.error('Error loading transactions:', error);
+        hideTransactionsSkeleton();
+    }
+}
+
+function showTransactionsSkeleton() {
+    const skeleton = document.getElementById('skeletonTransactionsList');
+    if (skeleton) {
+        skeleton.style.display = 'block';
+    }
+}
+
+function hideTransactionsSkeleton() {
+    const skeleton = document.getElementById('skeletonTransactionsList');
+    if (skeleton) {
+        skeleton.style.display = 'none';
     }
 }
 
@@ -263,12 +323,20 @@ function renderTransactions(transactions) {
     const container = document.getElementById('allTransactions');
     if (!container) return;
 
+    // Hide skeleton first
+    hideTransactionsSkeleton();
+
     if (transactions.length === 0) {
-        container.innerHTML = '<div class="loading">Tranzaksiyalar yo\'q</div>';
+        // Remove skeleton if exists
+        const skeleton = document.getElementById('skeletonTransactionsList');
+        if (skeleton && skeleton.parentNode === container) {
+            container.removeChild(skeleton);
+        }
+        container.innerHTML = '<div class="empty-state">Tranzaksiyalar yo\'q</div>';
         return;
     }
 
-    container.innerHTML = transactions.map(transaction => `
+    const transactionsHTML = transactions.map(transaction => `
         <div class="transaction-item">
             <div class="transaction-icon ${transaction.transaction_type}">
                 ${transaction.transaction_type === 'income' ? '📈' : '📉'}
@@ -285,6 +353,15 @@ function renderTransactions(transactions) {
             </div>
         </div>
     `).join('');
+    
+    // Remove skeleton if it exists in container
+    const skeleton = document.getElementById('skeletonTransactionsList');
+    if (skeleton && skeleton.parentNode === container) {
+        container.removeChild(skeleton);
+    }
+    
+    // Add transactions HTML
+    container.innerHTML = transactionsHTML;
 }
 
 function setupTransactionFilters() {
@@ -301,32 +378,99 @@ function setupTransactionFilters() {
 
 // Statistics
 async function loadStatistics() {
+    // Show skeleton loaders
+    showStatisticsSkeleton();
+    
     try {
         const response = await api.get(`/api/statistics?period=${state.currentPeriod}`);
 
         if (response.ok) {
             state.statistics = response.data;
-            updateStatsSummary(response.data);
-            renderChart(response.data);
+            hideStatisticsSkeleton();
+            updateAllStatistics(response.data);
         }
     } catch (error) {
         console.error('Error loading statistics:', error);
+        hideStatisticsSkeleton();
     }
 }
 
-function updateStatsSummary(stats) {
-    document.getElementById('statIncome').textContent = formatCurrency(stats.total_income);
-    document.getElementById('statExpense').textContent = formatCurrency(stats.total_expense);
-
-    const difference = stats.total_income - stats.total_expense;
-    const diffElement = document.getElementById('statDifference');
-    diffElement.textContent = formatCurrency(Math.abs(difference));
-    diffElement.className = 'summary-value ' + (difference >= 0 ? 'income' : 'expense');
+function showStatisticsSkeleton() {
+    // Skeleton loaders are shown by default in HTML
+    document.querySelectorAll('.skeleton-stat-card, .skeleton-summary-item, .skeleton-chart, .skeleton-list, .skeleton-metric-card').forEach(el => {
+        el.style.display = 'block';
+    });
+    document.getElementById('incomeExpenseChart').style.display = 'none';
+    document.getElementById('dailyDistributionChart').style.display = 'none';
+    document.getElementById('categoryBreakdown').style.display = 'none';
+    document.getElementById('topTransactionsList').style.display = 'none';
+    document.getElementById('statsGrid').innerHTML = '';
+    document.getElementById('metricsGrid').innerHTML = '';
 }
 
-function renderChart(stats) {
+function hideStatisticsSkeleton() {
+    document.querySelectorAll('.skeleton-stat-card, .skeleton-summary-item, .skeleton-chart, .skeleton-list, .skeleton-metric-card').forEach(el => {
+        el.style.display = 'none';
+    });
+}
+
+function updateAllStatistics(stats) {
+    updateStatsSummary(stats);
+    updateStatsCards(stats);
+    renderIncomeExpenseChart(stats);
+    renderDailyDistributionChart(stats);
+    renderCategoryBreakdown(stats);
+    renderTopTransactions(stats);
+    updateMetrics(stats);
+}
+
+function updateStatsSummary(stats) {
+    const summaryContainer = document.querySelector('.stats-summary');
+    summaryContainer.innerHTML = `
+        <div class="summary-item">
+            <span class="summary-label">Jami daromad:</span>
+            <span class="summary-value income" id="statIncome">${formatCurrency(stats.total_income)}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Jami xarajat:</span>
+            <span class="summary-value expense" id="statExpense">${formatCurrency(stats.total_expense)}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Sof foyda:</span>
+            <span class="summary-value ${stats.net_balance >= 0 ? 'income' : 'expense'}" id="statDifference">${formatCurrency(Math.abs(stats.net_balance))}</span>
+        </div>
+    `;
+}
+
+function updateStatsCards(stats) {
+    const statsGrid = document.getElementById('statsGrid');
+    statsGrid.innerHTML = `
+        <div class="stat-card-wrapper">
+            <div class="stat-card-label">Jami tranzaksiyalar</div>
+            <div class="stat-card-value">${stats.total_transactions || 0}</div>
+        </div>
+        <div class="stat-card-wrapper">
+            <div class="stat-card-label">Daromadlar soni</div>
+            <div class="stat-card-value income">${stats.income_count || 0}</div>
+        </div>
+        <div class="stat-card-wrapper">
+            <div class="stat-card-label">Xarajatlar soni</div>
+            <div class="stat-card-value expense">${stats.expense_count || 0}</div>
+        </div>
+        <div class="stat-card-wrapper">
+            <div class="stat-card-label">Xarajat foizi</div>
+            <div class="stat-card-value">${stats.expense_ratio || 0}%</div>
+        </div>
+    `;
+}
+
+function renderIncomeExpenseChart(stats) {
     const ctx = document.getElementById('incomeExpenseChart');
     if (!ctx) return;
+
+    // Hide skeleton, show chart
+    document.getElementById('skeletonIncomeExpenseChart').style.display = 'none';
+    ctx.style.display = 'block';
 
     // Destroy existing chart
     if (state.charts.incomeExpense) {
@@ -367,6 +511,159 @@ function renderChart(stats) {
             }
         }
     });
+}
+
+function renderDailyDistributionChart(stats) {
+    const ctx = document.getElementById('dailyDistributionChart');
+    if (!ctx) return;
+
+    // Hide skeleton, show chart
+    document.getElementById('skeletonDailyChart').style.display = 'none';
+    ctx.style.display = 'block';
+
+    const dailyData = stats.daily_distribution || [];
+    const labels = dailyData.map(d => d.date);
+    const incomeData = dailyData.map(d => parseFloat(d.daily_income) || 0);
+    const expenseData = dailyData.map(d => parseFloat(d.daily_expense) || 0);
+
+    // Destroy existing chart
+    if (state.charts.dailyDistribution) {
+        state.charts.dailyDistribution.destroy();
+    }
+
+    // Create new chart
+    state.charts.dailyDistribution = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Daromad',
+                data: incomeData,
+                borderColor: 'rgb(16, 185, 129)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Xarajat',
+                data: expenseData,
+                borderColor: 'rgb(239, 68, 68)',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function renderCategoryBreakdown(stats) {
+    const container = document.getElementById('categoryBreakdown');
+    if (!container) return;
+
+    // Hide skeleton, show breakdown
+    document.getElementById('skeletonCategoryList').style.display = 'none';
+    container.style.display = 'block';
+
+    const categories = stats.category_breakdown || [];
+    
+    if (categories.length === 0) {
+        container.innerHTML = '<div class="empty-state">Kategoriyalar bo\'yicha ma\'lumotlar yo\'q</div>';
+        return;
+    }
+
+    const total = categories.reduce((sum, cat) => sum + parseFloat(cat.total_amount || 0), 0);
+
+    container.innerHTML = categories.map(cat => {
+        const percentage = total > 0 ? ((parseFloat(cat.total_amount || 0) / total) * 100).toFixed(1) : 0;
+        return `
+            <div class="category-item">
+                <div class="category-info">
+                    <span class="category-name">${cat.category || 'Kategoriyasiz'}</span>
+                    <span class="category-count">${cat.count || 0} ta</span>
+                </div>
+                <div class="category-amount">${formatCurrency(parseFloat(cat.total_amount || 0))}</div>
+                <div class="category-bar">
+                    <div class="category-bar-fill" style="width: ${percentage}%"></div>
+                </div>
+                <div class="category-percentage">${percentage}%</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderTopTransactions(stats) {
+    const container = document.getElementById('topTransactionsList');
+    if (!container) return;
+
+    // Hide skeleton, show list
+    document.getElementById('skeletonTopTransactions').style.display = 'none';
+    container.style.display = 'block';
+
+    const transactions = stats.top_transactions || [];
+    
+    if (transactions.length === 0) {
+        container.innerHTML = '<div class="empty-state">Tranzaksiyalar yo\'q</div>';
+        return;
+    }
+
+    container.innerHTML = transactions.map(trans => `
+        <div class="transaction-item">
+            <div class="transaction-icon ${trans.transaction_type}">
+                ${trans.transaction_type === 'income' ? '📈' : '📉'}
+            </div>
+            <div class="transaction-info">
+                <div class="transaction-category">${trans.category || 'Kategoriyasiz'}</div>
+                <div class="transaction-description">${trans.description || ''}</div>
+            </div>
+            <div class="transaction-amount">
+                <div class="amount-value ${trans.transaction_type}">
+                    ${trans.transaction_type === 'income' ? '+' : '-'}${formatCurrency(trans.amount, trans.currency)}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateMetrics(stats) {
+    const metricsGrid = document.getElementById('metricsGrid');
+    metricsGrid.innerHTML = `
+        <div class="metric-card">
+            <div class="metric-label">O'rtacha daromad</div>
+            <div class="metric-value income">${formatCurrency(stats.avg_income || 0)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">O'rtacha xarajat</div>
+            <div class="metric-value expense">${formatCurrency(stats.avg_expense || 0)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Eng katta daromad</div>
+            <div class="metric-value income">${formatCurrency(stats.max_income || 0)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Eng katta xarajat</div>
+            <div class="metric-value expense">${formatCurrency(stats.max_expense || 0)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Kunlik o'rtacha xarajat</div>
+            <div class="metric-value">${formatCurrency(stats.avg_daily_expense || 0)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Davr (kun)</div>
+            <div class="metric-value">${stats.period_days || 0}</div>
+        </div>
+    `;
 }
 
 function setupStatsPeriod() {

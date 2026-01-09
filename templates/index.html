@@ -89,6 +89,11 @@
                         <h2>Umumiy balans</h2>
                     </div>
                     <div class="balance-display">
+                        <div class="skeleton-balance" id="skeletonBalance">
+                            <div class="skeleton-line" style="width: 200px; height: 80px; margin: 0 auto; border-radius: 40px;"></div>
+                            <div class="skeleton-line" style="width: 150px; height: 40px; margin: 20px auto 0;"></div>
+                        </div>
+                        <div id="balanceContent" style="display: none;">
                         <svg viewBox="0 0 200 100" class="balance-gauge">
                             <defs>
                                 <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -102,6 +107,7 @@
                         <div class="balance-amount">
                             <span class="amount" id="totalBalance">0</span>
                             <span class="currency">UZS</span>
+                            </div>
                         </div>
                     </div>
                     <button class="btn-add-transaction" id="addTransactionBtn">
@@ -111,19 +117,21 @@
                 </div>
 
                 <!-- Quick Stats -->
-                <div class="quick-stats">
-                    <div class="stat-card income">
+                <div class="quick-stats" id="quickStats">
+                    <div class="stat-card income skeleton-stat-card">
                         <div class="stat-icon">📈</div>
                         <div class="stat-info">
                             <p class="stat-label">Daromad</p>
-                            <p class="stat-value" id="incomeAmount">0 UZS</p>
+                            <div class="skeleton-line" style="width: 80px; height: 20px; margin-top: 4px;"></div>
+                            <p class="stat-value" id="incomeAmount" style="display: none;">0 UZS</p>
                         </div>
                     </div>
-                    <div class="stat-card expense">
+                    <div class="stat-card expense skeleton-stat-card">
                         <div class="stat-icon">📉</div>
                         <div class="stat-info">
                             <p class="stat-label">Xarajat</p>
-                            <p class="stat-value" id="expenseAmount">0 UZS</p>
+                            <div class="skeleton-line" style="width: 80px; height: 20px; margin-top: 4px;"></div>
+                            <p class="stat-value" id="expenseAmount" style="display: none;">0 UZS</p>
                         </div>
                     </div>
                 </div>
@@ -135,8 +143,32 @@
                         <a href="#" class="link" id="viewAllTransactions">Barchasi</a>
                     </div>
                     <div class="transaction-list" id="recentTransactions">
-                        <!-- Transactions will be loaded here -->
-                        <div class="loading">Yuklanmoqda...</div>
+                        <div class="skeleton-list" id="skeletonTransactions">
+                            <div class="skeleton-list-item">
+                                <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                                <div style="flex: 1; margin-left: 12px;">
+                                    <div class="skeleton-line" style="width: 60%; height: 16px; margin-bottom: 8px;"></div>
+                                    <div class="skeleton-line" style="width: 40%; height: 14px;"></div>
+                                </div>
+                                <div class="skeleton-line" style="width: 80px; height: 20px;"></div>
+                            </div>
+                            <div class="skeleton-list-item">
+                                <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                                <div style="flex: 1; margin-left: 12px;">
+                                    <div class="skeleton-line" style="width: 65%; height: 16px; margin-bottom: 8px;"></div>
+                                    <div class="skeleton-line" style="width: 45%; height: 14px;"></div>
+                                </div>
+                                <div class="skeleton-line" style="width: 80px; height: 20px;"></div>
+                            </div>
+                            <div class="skeleton-list-item">
+                                <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                                <div style="flex: 1; margin-left: 12px;">
+                                    <div class="skeleton-line" style="width: 55%; height: 16px; margin-bottom: 8px;"></div>
+                                    <div class="skeleton-line" style="width: 35%; height: 14px;"></div>
+                                </div>
+                                <div class="skeleton-line" style="width: 80px; height: 20px;"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -157,6 +189,73 @@
                     <button class="filter-tab" data-filter="expense">Xarajat</button>
                 </div>
                 <div class="transaction-list" id="allTransactions">
+                    <!-- Skeleton Loading -->
+                    <div class="skeleton-list" id="skeletonTransactionsList">
+                        <div class="skeleton-list-item">
+                            <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                            <div style="flex: 1; margin-left: 12px;">
+                                <div class="skeleton-line" style="width: 60%; height: 16px; margin-bottom: 8px;"></div>
+                                <div class="skeleton-line" style="width: 40%; height: 14px;"></div>
+                            </div>
+                            <div class="skeleton-line" style="width: 100px; height: 20px;"></div>
+                        </div>
+                        <div class="skeleton-list-item">
+                            <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                            <div style="flex: 1; margin-left: 12px;">
+                                <div class="skeleton-line" style="width: 65%; height: 16px; margin-bottom: 8px;"></div>
+                                <div class="skeleton-line" style="width: 45%; height: 14px;"></div>
+                            </div>
+                            <div class="skeleton-line" style="width: 100px; height: 20px;"></div>
+                        </div>
+                        <div class="skeleton-list-item">
+                            <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                            <div style="flex: 1; margin-left: 12px;">
+                                <div class="skeleton-line" style="width: 55%; height: 16px; margin-bottom: 8px;"></div>
+                                <div class="skeleton-line" style="width: 35%; height: 14px;"></div>
+                            </div>
+                            <div class="skeleton-line" style="width: 100px; height: 20px;"></div>
+                        </div>
+                        <div class="skeleton-list-item">
+                            <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                            <div style="flex: 1; margin-left: 12px;">
+                                <div class="skeleton-line" style="width: 70%; height: 16px; margin-bottom: 8px;"></div>
+                                <div class="skeleton-line" style="width: 50%; height: 14px;"></div>
+                            </div>
+                            <div class="skeleton-line" style="width: 100px; height: 20px;"></div>
+                        </div>
+                        <div class="skeleton-list-item">
+                            <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                            <div style="flex: 1; margin-left: 12px;">
+                                <div class="skeleton-line" style="width: 58%; height: 16px; margin-bottom: 8px;"></div>
+                                <div class="skeleton-line" style="width: 38%; height: 14px;"></div>
+                            </div>
+                            <div class="skeleton-line" style="width: 100px; height: 20px;"></div>
+                        </div>
+                        <div class="skeleton-list-item">
+                            <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                            <div style="flex: 1; margin-left: 12px;">
+                                <div class="skeleton-line" style="width: 62%; height: 16px; margin-bottom: 8px;"></div>
+                                <div class="skeleton-line" style="width: 42%; height: 14px;"></div>
+                            </div>
+                            <div class="skeleton-line" style="width: 100px; height: 20px;"></div>
+                        </div>
+                        <div class="skeleton-list-item">
+                            <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                            <div style="flex: 1; margin-left: 12px;">
+                                <div class="skeleton-line" style="width: 67%; height: 16px; margin-bottom: 8px;"></div>
+                                <div class="skeleton-line" style="width: 47%; height: 14px;"></div>
+                            </div>
+                            <div class="skeleton-line" style="width: 100px; height: 20px;"></div>
+                        </div>
+                        <div class="skeleton-list-item">
+                            <div class="skeleton-line" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                            <div style="flex: 1; margin-left: 12px;">
+                                <div class="skeleton-line" style="width: 53%; height: 16px; margin-bottom: 8px;"></div>
+                                <div class="skeleton-line" style="width: 33%; height: 14px;"></div>
+                            </div>
+                            <div class="skeleton-line" style="width: 100px; height: 20px;"></div>
+                        </div>
+                    </div>
                     <!-- Transactions will be loaded here -->
                 </div>
             </div>
@@ -171,23 +270,126 @@
                     <button class="period-btn" data-period="month">Oy</button>
                     <button class="period-btn" data-period="year">Yil</button>
                 </div>
+                
+                <!-- Main Stats Cards -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card-wrapper skeleton-stat-card">
+                        <div class="skeleton-line" style="width: 60%; height: 16px; margin-bottom: 8px;"></div>
+                        <div class="skeleton-line" style="width: 80%; height: 24px;"></div>
+                    </div>
+                    <div class="stat-card-wrapper skeleton-stat-card">
+                        <div class="skeleton-line" style="width: 60%; height: 16px; margin-bottom: 8px;"></div>
+                        <div class="skeleton-line" style="width: 80%; height: 24px;"></div>
+                    </div>
+                    <div class="stat-card-wrapper skeleton-stat-card">
+                        <div class="skeleton-line" style="width: 60%; height: 16px; margin-bottom: 8px;"></div>
+                        <div class="skeleton-line" style="width: 80%; height: 24px;"></div>
+                    </div>
+                    <div class="stat-card-wrapper skeleton-stat-card">
+                        <div class="skeleton-line" style="width: 60%; height: 16px; margin-bottom: 8px;"></div>
+                        <div class="skeleton-line" style="width: 80%; height: 24px;"></div>
+                    </div>
+                </div>
+
                 <div class="stats-container">
+                    <!-- Income/Expense Chart -->
                     <div class="chart-card">
                         <h3>Daromad va xarajat</h3>
-                        <canvas id="incomeExpenseChart"></canvas>
+                        <div class="skeleton-chart" id="skeletonIncomeExpenseChart">
+                            <div class="skeleton-line" style="width: 100%; height: 200px;"></div>
+                        </div>
+                        <canvas id="incomeExpenseChart" style="display: none;"></canvas>
                     </div>
+
+                    <!-- Stats Summary -->
                     <div class="stats-summary">
-                        <div class="summary-item">
-                            <span class="summary-label">Jami daromad:</span>
-                            <span class="summary-value income" id="statIncome">0 UZS</span>
+                        <div class="summary-item skeleton-summary-item">
+                            <div class="skeleton-line" style="width: 70%; height: 14px; margin-bottom: 8px;"></div>
+                            <div class="skeleton-line" style="width: 50%; height: 20px;"></div>
                         </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Jami xarajat:</span>
-                            <span class="summary-value expense" id="statExpense">0 UZS</span>
+                        <div class="summary-item skeleton-summary-item">
+                            <div class="skeleton-line" style="width: 70%; height: 14px; margin-bottom: 8px;"></div>
+                            <div class="skeleton-line" style="width: 50%; height: 20px;"></div>
                         </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Farq:</span>
-                            <span class="summary-value" id="statDifference">0 UZS</span>
+                        <div class="summary-item skeleton-summary-item">
+                            <div class="skeleton-line" style="width: 70%; height: 14px; margin-bottom: 8px;"></div>
+                            <div class="skeleton-line" style="width: 50%; height: 20px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Stats Sections -->
+                <div class="stats-sections">
+                    <!-- Daily Distribution Chart -->
+                    <div class="chart-card">
+                        <h3>Kunlik taqsimot</h3>
+                        <div class="skeleton-chart" id="skeletonDailyChart">
+                            <div class="skeleton-line" style="width: 100%; height: 250px;"></div>
+                        </div>
+                        <canvas id="dailyDistributionChart" style="display: none;"></canvas>
+                    </div>
+
+                    <!-- Category Breakdown -->
+                    <div class="chart-card">
+                        <h3>Kategoriya bo'yicha xarajatlar</h3>
+                        <div class="skeleton-list" id="skeletonCategoryList">
+                            <div class="skeleton-list-item">
+                                <div class="skeleton-line" style="width: 40%; height: 16px;"></div>
+                                <div class="skeleton-line" style="width: 30%; height: 16px;"></div>
+                            </div>
+                            <div class="skeleton-list-item">
+                                <div class="skeleton-line" style="width: 45%; height: 16px;"></div>
+                                <div class="skeleton-line" style="width: 25%; height: 16px;"></div>
+                            </div>
+                            <div class="skeleton-list-item">
+                                <div class="skeleton-line" style="width: 35%; height: 16px;"></div>
+                                <div class="skeleton-line" style="width: 35%; height: 16px;"></div>
+                            </div>
+                            <div class="skeleton-list-item">
+                                <div class="skeleton-line" style="width: 50%; height: 16px;"></div>
+                                <div class="skeleton-line" style="width: 20%; height: 16px;"></div>
+                            </div>
+                        </div>
+                        <div id="categoryBreakdown" style="display: none;"></div>
+                    </div>
+
+                    <!-- Top Transactions -->
+                    <div class="chart-card">
+                        <h3>Eng katta tranzaksiyalar</h3>
+                        <div class="skeleton-list" id="skeletonTopTransactions">
+                            <div class="skeleton-list-item">
+                                <div class="skeleton-line" style="width: 60%; height: 16px;"></div>
+                                <div class="skeleton-line" style="width: 30%; height: 16px;"></div>
+                            </div>
+                            <div class="skeleton-list-item">
+                                <div class="skeleton-line" style="width: 55%; height: 16px;"></div>
+                                <div class="skeleton-line" style="width: 35%; height: 16px;"></div>
+                            </div>
+                            <div class="skeleton-list-item">
+                                <div class="skeleton-line" style="width: 65%; height: 16px;"></div>
+                                <div class="skeleton-line" style="width: 25%; height: 16px;"></div>
+                            </div>
+                        </div>
+                        <div id="topTransactionsList" style="display: none;"></div>
+                    </div>
+
+                    <!-- Additional Metrics -->
+                    <div class="metrics-grid" id="metricsGrid">
+                        <div class="metric-card skeleton-metric-card">
+                            <div class="skeleton-line" style="width: 70%; height: 14px; margin-bottom: 8px;"></div>
+                            <div class="skeleton-line" style="width: 50%; height: 20px;"></div>
+                        </div>
+                        <div class="metric-card skeleton-metric-card">
+                            <div class="skeleton-line" style="width: 70%; height: 14px; margin-bottom: 8px;"></div>
+                            <div class="skeleton-line" style="width: 50%; height: 20px;"></div>
+                        </div>
+                        <div class="metric-card skeleton-metric-card">
+                            <div class="skeleton-line" style="width: 70%; height: 14px; margin-bottom: 8px;"></div>
+                            <div class="skeleton-line" style="width: 50%; height: 20px;"></div>
+                        </div>
+                        <div class="metric-card skeleton-metric-card">
+                            <div class="skeleton-line" style="width: 70%; height: 14px; margin-bottom: 8px;"></div>
+                            <div class="skeleton-line" style="width: 50%; height: 20px;"></div>
                         </div>
                     </div>
                 </div>
